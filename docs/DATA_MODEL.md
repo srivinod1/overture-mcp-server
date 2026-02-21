@@ -160,6 +160,8 @@ Common values in the `class` column:
 
 ### Sample Query: Building Composition in 1km
 ```sql
+-- Note: Buildings have polygon geometries, so ST_Centroid extracts the center point
+-- before ST_FlipCoordinates swaps (lng,lat) → (lat,lng) for ST_Distance_Spheroid
 SELECT
     COALESCE(class, 'unknown') AS building_class,
     COUNT(*) AS count
@@ -167,7 +169,7 @@ FROM read_parquet('s3://overturemaps-us-west-2/release/2026-01-21.0/theme=buildi
 WHERE bbox.xmin BETWEEN 4.890 AND 4.918                                -- bbox pre-filter
   AND bbox.ymin BETWEEN 52.358 AND 52.377
   AND ST_Distance_Spheroid(
-        ST_FlipCoordinates(geometry),
+        ST_FlipCoordinates(ST_Centroid(geometry)),
         ST_FlipCoordinates(ST_Point(4.9041, 52.3676))
       ) < 1000                                                         -- exact filter (meters)
 GROUP BY COALESCE(class, 'unknown')

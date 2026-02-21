@@ -19,9 +19,10 @@ class TestBuildingCountQuery:
         assert "bbox.xmin BETWEEN ? AND ?" in sql
         assert "bbox.ymin BETWEEN ? AND ?" in sql
 
-    def test_uses_flip_coordinates(self):
+    def test_uses_centroid_and_flip_coordinates(self):
+        """Buildings have polygon geometry; must use ST_Centroid before ST_FlipCoordinates."""
         sql, _ = building_count_query(52.37, 4.90, 1000, "buildings")
-        assert "ST_FlipCoordinates(geometry)" in sql
+        assert "ST_FlipCoordinates(ST_Centroid(geometry))" in sql
         assert "ST_FlipCoordinates(ST_Point(?, ?))" in sql
 
     def test_no_category_filter(self):
@@ -51,9 +52,10 @@ class TestBuildingCompositionQuery:
         sql, _ = building_composition_query(52.37, 4.90, 1000, "buildings")
         assert "ORDER BY count DESC" in sql
 
-    def test_uses_flip_coordinates(self):
+    def test_uses_centroid_and_flip_coordinates(self):
+        """Buildings have polygon geometry; must use ST_Centroid before ST_FlipCoordinates."""
         sql, _ = building_composition_query(52.37, 4.90, 1000, "buildings")
-        assert "ST_FlipCoordinates" in sql
+        assert "ST_FlipCoordinates(ST_Centroid(geometry))" in sql
 
     def test_has_bbox_prefilter(self):
         sql, _ = building_composition_query(52.37, 4.90, 1000, "buildings")

@@ -3,7 +3,11 @@ SQL query builders for the Buildings theme.
 
 All functions return (sql, params) tuples with ? placeholders.
 No category filter — buildings are queried by location only.
-ST_FlipCoordinates is used on all geometry arguments to ST_Distance_Spheroid.
+
+Buildings have polygon geometries (footprints), not points. DuckDB's
+ST_FlipCoordinates cannot operate on polygons directly, so we use
+ST_Centroid(geometry) to get the center point first, then flip for
+ST_Distance_Spheroid.  Pattern: ST_FlipCoordinates(ST_Centroid(geometry)).
 """
 
 from __future__ import annotations
@@ -35,7 +39,7 @@ def building_count_query(
     WHERE bbox.xmin BETWEEN ? AND ?
       AND bbox.ymin BETWEEN ? AND ?
       AND ST_Distance_Spheroid(
-            ST_FlipCoordinates(geometry),
+            ST_FlipCoordinates(ST_Centroid(geometry)),
             ST_FlipCoordinates(ST_Point(?, ?))
           ) < ?"""
 
@@ -77,7 +81,7 @@ def building_composition_query(
     WHERE bbox.xmin BETWEEN ? AND ?
       AND bbox.ymin BETWEEN ? AND ?
       AND ST_Distance_Spheroid(
-            ST_FlipCoordinates(geometry),
+            ST_FlipCoordinates(ST_Centroid(geometry)),
             ST_FlipCoordinates(ST_Point(?, ?))
           ) < ?
     GROUP BY COALESCE(class, 'unknown')

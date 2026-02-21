@@ -16,6 +16,7 @@ This document defines every operation available through `execute_operation`. Eac
 - Category values are validated against the cached taxonomy before reaching SQL.
 - Spatial filtering uses bbox pre-filter (degrees) + `ST_Distance_Spheroid` (meters) — not `ST_DWithin`.
 - **DuckDB coordinate order quirk**: `ST_Distance_Spheroid` expects (lat, lng) internally, but Overture stores (lng, lat). All geometry arguments to `ST_Distance_Spheroid` are wrapped in `ST_FlipCoordinates()` to correct coordinate order. Without this, distance calculations return incorrect values. This does NOT apply to `ST_Contains`, which operates in coordinate space.
+- **Polygon geometry quirk**: `ST_FlipCoordinates` can only operate on point geometries. For buildings (which have polygon footprints), use `ST_FlipCoordinates(ST_Centroid(geometry))` to extract the center point first. Places use point geometries, so `ST_FlipCoordinates(geometry)` works directly.
 - When `include_geometry=true`, WKT strings are capped at 10,000 characters.
 
 ---
@@ -286,11 +287,13 @@ FROM read_parquet('s3://overturemaps-us-west-2/release/{version}/theme=buildings
 WHERE bbox.xmin BETWEEN ? AND ?
   AND bbox.ymin BETWEEN ? AND ?
   AND ST_Distance_Spheroid(
-        ST_FlipCoordinates(geometry),
+        ST_FlipCoordinates(ST_Centroid(geometry)),
         ST_FlipCoordinates(ST_Point(?, ?))
       ) < ?
 -- params: [lng_min, lng_max, lat_min, lat_max, lng, lat, radius_m]
 ```
+
+**Note:** Buildings have polygon geometries (footprints), not points. `ST_FlipCoordinates` cannot operate on polygons directly, so `ST_Centroid(geometry)` extracts the center point first.
 
 **Empty result suggestion:**
 `"Zero buildings found within {radius_m}m. This may be an undeveloped area or indicate sparse coverage in this region."`
@@ -350,7 +353,7 @@ FROM read_parquet('s3://overturemaps-us-west-2/release/{version}/theme=buildings
 WHERE bbox.xmin BETWEEN ? AND ?
   AND bbox.ymin BETWEEN ? AND ?
   AND ST_Distance_Spheroid(
-        ST_FlipCoordinates(geometry),
+        ST_FlipCoordinates(ST_Centroid(geometry)),
         ST_FlipCoordinates(ST_Point(?, ?))
       ) < ?
 GROUP BY COALESCE(class, 'unknown')

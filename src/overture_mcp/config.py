@@ -60,6 +60,12 @@ class ServerConfig:
     # Server
     port: int = DEFAULT_PORT
 
+    # Data source overrides (for testing with local fixture data)
+    # When set, operations use these instead of S3 paths
+    _places_source: str | None = None
+    _buildings_source: str | None = None
+    _divisions_source: str | None = None
+
     def __post_init__(self):
         """Validate config values after initialization."""
         if self.tool_mode not in VALID_TOOL_MODES:
@@ -97,17 +103,23 @@ class ServerConfig:
 
     @property
     def places_path(self) -> str:
-        """S3 path for places data."""
+        """Data source for places (S3 path or local override)."""
+        if self._places_source:
+            return self._places_source
         return self.s3_path("places", "place")
 
     @property
     def buildings_path(self) -> str:
-        """S3 path for buildings data."""
+        """Data source for buildings (S3 path or local override)."""
+        if self._buildings_source:
+            return self._buildings_source
         return self.s3_path("buildings", "building")
 
     @property
     def divisions_path(self) -> str:
-        """S3 path for divisions data."""
+        """Data source for divisions (S3 path or local override)."""
+        if self._divisions_source:
+            return self._divisions_source
         return self.s3_path("divisions", "division_area")
 
 

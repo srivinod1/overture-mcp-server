@@ -207,3 +207,42 @@ def buildings_parquet_path() -> str:
 def divisions_parquet_path() -> str:
     """Absolute path to the divisions fixture parquet file."""
     return DIVISIONS_PARQUET
+
+
+# ---------------------------------------------------------------------------
+# Operation test fixtures (for integration tests)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture(scope="session")
+def test_config() -> "ServerConfig":
+    """Server config pointing to local fixture data instead of S3."""
+    from overture_mcp.config import ServerConfig
+    return ServerConfig(
+        api_key="test-key-12345",
+        _places_source="places",
+        _buildings_source="buildings",
+        _divisions_source="divisions",
+    )
+
+
+@pytest.fixture(scope="session")
+def test_db() -> "Database":
+    """Database initialized with local fixture data."""
+    from overture_mcp.db import Database
+    from overture_mcp.config import ServerConfig
+
+    config = ServerConfig(api_key="test-key-12345")
+    db = Database(config)
+    db.initialize_local(
+        places_path=PLACES_PARQUET,
+        buildings_path=BUILDINGS_PARQUET,
+        divisions_path=DIVISIONS_PARQUET,
+    )
+    return db
+
+
+@pytest.fixture(scope="session")
+def test_registry(test_db, test_config, category_taxonomy) -> "OperationRegistry":
+    """Fully populated operation registry wired to fixture data."""
+    from overture_mcp.server import build_registry
+    return build_registry(test_db, test_config, category_taxonomy)
