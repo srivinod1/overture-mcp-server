@@ -226,6 +226,118 @@ def validate_include_geometry(value: Any) -> bool:
     return bool(value)
 
 
+# ---------------------------------------------------------------------------
+# Road class validation
+# ---------------------------------------------------------------------------
+
+VALID_ROAD_CLASSES = {
+    "motorway", "trunk", "primary", "secondary", "tertiary",
+    "residential", "service", "footway", "cycleway", "path",
+    "track", "unclassified",
+}
+
+
+def validate_road_class(value: Any) -> str:
+    """Validate road class against known Overture road classes.
+
+    Args:
+        value: Road class string.
+
+    Returns:
+        Validated road class string.
+
+    Raises:
+        ValidationError: If value is not a valid road class.
+    """
+    if not value or not isinstance(value, str):
+        raise ValidationError(
+            "road_class is required and must be a non-empty string.",
+            param_name="road_class",
+        )
+
+    road_class = value.strip().lower()
+    if not road_class:
+        raise ValidationError(
+            "road_class must be a non-empty string.",
+            param_name="road_class",
+        )
+
+    if road_class not in VALID_ROAD_CLASSES:
+        raise ValidationError(
+            f"Unknown road_class: '{road_class}'. "
+            f"Valid values: {', '.join(sorted(VALID_ROAD_CLASSES))}",
+            param_name="road_class",
+        )
+
+    return road_class
+
+
+# ---------------------------------------------------------------------------
+# Land use subtype validation
+# ---------------------------------------------------------------------------
+
+VALID_LAND_USE_SUBTYPES = {
+    "residential", "commercial", "industrial", "institutional",
+    "agriculture", "aquaculture", "recreation", "park", "forest",
+    "cemetery", "religious", "military", "education", "medical",
+    "transportation", "airport", "port", "dam", "quarry",
+    "landfill", "brownfield", "greenfield",
+}
+
+
+def validate_land_use_subtype(value: Any) -> str:
+    """Validate land use subtype against known Overture subtypes.
+
+    Args:
+        value: Land use subtype string.
+
+    Returns:
+        Validated subtype string.
+
+    Raises:
+        ValidationError: If value is not a valid land use subtype.
+    """
+    if not value or not isinstance(value, str):
+        raise ValidationError(
+            "subtype is required and must be a non-empty string.",
+            param_name="subtype",
+        )
+
+    subtype = value.strip().lower()
+    if not subtype:
+        raise ValidationError(
+            "subtype must be a non-empty string.",
+            param_name="subtype",
+        )
+
+    if subtype not in VALID_LAND_USE_SUBTYPES:
+        raise ValidationError(
+            f"Unknown land use subtype: '{subtype}'. "
+            f"Valid values: {', '.join(sorted(VALID_LAND_USE_SUBTYPES))}",
+            param_name="subtype",
+        )
+
+    return subtype
+
+
+def validate_include_closed(value: Any) -> bool:
+    """Validate and return include_closed boolean.
+
+    Args:
+        value: Boolean or boolean-like value.
+
+    Returns:
+        Validated boolean. Default: False.
+    """
+    if value is None:
+        return False
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.lower() in ("true", "1", "yes")
+    return bool(value)
+
+
 def validate_query(value: Any) -> str | None:
     """Validate the query parameter for category search.
 

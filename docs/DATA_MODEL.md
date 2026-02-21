@@ -1,6 +1,6 @@
 # Overture Maps Data Model Reference
 
-This document describes the Overture Maps schema for the three data themes used in V1: Places, Buildings, and Divisions.
+This document describes the Overture Maps schema for the five data themes used in V1: Places, Buildings, Divisions, Transportation, and Land Use.
 
 ---
 
@@ -23,6 +23,10 @@ s3://overturemaps-us-west-2/release/{VERSION}/theme={THEME}/type={TYPE}/
 | Places | `theme=places/type=place/*` | ~5 GB |
 | Buildings | `theme=buildings/type=building/*` | ~50 GB |
 | Divisions | `theme=divisions/type=division_area/*` | ~2 GB |
+| Transportation | `theme=transportation/type=segment/*` | ~46 GB |
+| Land Use | `theme=base/type=land_use/*` | ~3 GB |
+
+**Note:** Land Use lives under the `base` theme (not a dedicated top-level theme). Transportation uses only `type=segment` (not `type=connector`).
 
 ---
 
@@ -68,11 +72,46 @@ s3://overturemaps-us-west-2/release/2026-01-21.0/theme=places/type=place/*
 | `bbox.xmax` | float | Bounding box max longitude | All tools (pre-filter) |
 | `bbox.ymin` | float | Bounding box min latitude | All tools (pre-filter) |
 | `bbox.ymax` | float | Bounding box max latitude | All tools (pre-filter) |
-| `confidence` | float | Data confidence score (0-1) | Future use |
-| `websites` | array[string] | Associated websites | Future use |
-| `phones` | array[string] | Phone numbers | Future use |
-| `addresses` | struct | Address components | Future use |
-| `sources` | array[struct] | Data source attribution | Future use |
+| `confidence` | float | Data quality score (0.0 to 1.0). Higher = more reliable. | `places_in_radius`, `nearest_place_of_type` |
+| `websites` | array[string] | Associated website URLs | `places_in_radius`, `nearest_place_of_type` |
+| `phones` | array[string] | Phone numbers | `places_in_radius`, `nearest_place_of_type` |
+| `addresses` | array[struct] | Structured address components (see below) | `places_in_radius`, `nearest_place_of_type` |
+| `brand.names.primary` | string | Brand name (for chain locations) | `places_in_radius`, `nearest_place_of_type` |
+| `brand.wikidata` | string | Wikidata entity ID for the brand | `places_in_radius`, `nearest_place_of_type` |
+| `operating_status` | string | Required field: `open`, `temporarily_closed`, or `permanently_closed` | All place tools (default filter) |
+| `sources` | array[struct] | Data source attribution | — |
+
+### Address Structure
+
+The `addresses` column is an array of structs. Each struct has:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `freeform` | string | Full address as a single string (most useful field) |
+| `locality` | string | City/town name |
+| `postcode` | string | Postal/zip code |
+| `region` | string | State/province |
+| `country` | string | ISO 3166-1 alpha-2 country code |
+
+The server uses `addresses[1]` (first address entry). If `freeform` is available, it is used directly. Otherwise, the address is composed from `locality`, `postcode`, `region`, `country`.
+
+### Brand Structure
+
+The `brand` column identifies chain/franchise locations:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `brand.names.primary` | string | Brand display name |
+| `brand.wikidata` | string | Wikidata entity ID (e.g., "Q37158"). Enables cross-referencing. |
+
+### Operating Status
+
+The `operating_status` field is required (never null) in Overture Places:
+- `open` — currently operating (vast majority of records)
+- `temporarily_closed` — closed but expected to reopen
+- `permanently_closed` — permanently shut down
+
+By default, V1 place queries exclude `permanently_closed` places. The `include_closed=true` parameter overrides this.
 
 ### Category Taxonomy
 Overture uses a hierarchical category system. Examples:
@@ -228,6 +267,189 @@ ORDER BY admin_level ASC;
 
 ---
 
+## Theme: Transportation (Road Segments)
+
+### S3 Path
+```
+s3://overturemaps-us-west-2/release/2026-01-21.0/theme=transportation/type=segment/*
+```
+
+### Key Columns
+
+| Column | Type | Description | Used By |
+|--------|------|-------------|---------|
+| `id` | string | Unique segment identifier | — |
+| `names.primary` | string | Road name (often null for minor roads) | `nearest_road_of_class` |
+| `subtype` | string | Segment type: `road`, `rail`, `water` | All (filter to `road` only) |
+| `class` | string | Road class (see below) | `road_count_by_class`, `nearest_road_of_class` |
+| `road_surface` | string | Surface material (see below) | `road_surface_composition`, `nearest_road_of_class` |
+| `road_flags.is_bridge` | boolean | Whether segment is a bridge | `nearest_road_of_class` |
+| `road_flags.is_tunnel` | boolean | Whether segment is a tunnel | `nearest_road_of_class` |
+| `road_flags.is_link` | boolean | Whether segment is a highway ramp/link | `nearest_road_of_class` |
+| `road_flags.is_under_construction` | boolean | Whether road is under construction | — |
+| `geometry` | geometry (LineString) | Road centerline geometry | All transportation tools |
+| `bbox.xmin` | float | Bounding box min longitude | All tools (pre-filter) |
+| `bbox.xmax` | float | Bounding box max longitude | All tools (pre-filter) |
+| `bbox.ymin` | float | Bounding box min latitude | All tools (pre-filter) |
+| `bbox.ymax` | float | Bounding box max latitude | All tools (pre-filter) |
+| `speed_limits` | array[struct] | Speed limit data (sparse, ~10-15% globally) | Excluded from V1 |
+| `width_rules` | array[struct] | Road width rules (very sparse) | Excluded from V1 |
+| `access_restrictions` | array[struct] | Access rules (sparse outside Europe) | Excluded from V1 |
+| `sources` | array[struct] | Data source attribution | — |
+
+### Road Classes
+
+The `class` field follows the OpenStreetMap road hierarchy. V1 validates against this set:
+
+| Class | Description | Typical Use |
+|-------|-------------|-------------|
+| `motorway` | Controlled-access highway | Major highways, interstates |
+| `trunk` | Important roads that aren't motorways | National highways |
+| `primary` | Major roads | State highways, arterials |
+| `secondary` | Less important through roads | County roads |
+| `tertiary` | Local connecting roads | Town roads |
+| `residential` | Roads in residential areas | Neighborhood streets |
+| `service` | Access roads, parking lots, driveways | Service roads |
+| `footway` | Designated foot paths | Sidewalks, pedestrian paths |
+| `cycleway` | Designated bicycle paths | Bike lanes, cycle tracks |
+| `path` | Multi-use paths | Hiking trails, shared-use paths |
+| `track` | Agricultural/forestry roads | Farm roads |
+| `unclassified` | Minor public roads | Miscellaneous |
+
+### Road Surface Types
+
+Common values for `road_surface`:
+
+| Surface | Description |
+|---------|-------------|
+| `paved` | Generic paved (asphalt, concrete, etc.) |
+| `unpaved` | Generic unpaved |
+| `asphalt` | Asphalt/bitumen surface |
+| `concrete` | Concrete surface |
+| `gravel` | Gravel/crushed stone |
+| `dirt` | Dirt/earth road |
+| `ground` | Natural ground surface |
+| `cobblestone` | Cobblestone/sett surface |
+
+**Coverage note**: `road_surface` is null for ~40-60% of segments globally, depending on region. European cities tend to have better coverage than rural areas in developing regions.
+
+### Sample Query: Road Network Composition in 1km
+```sql
+-- Note: Road segments are LineStrings. ST_PointOnSurface returns a point
+-- guaranteed to lie on the line (more robust than ST_Centroid for curves).
+SELECT
+    COALESCE(class, 'unknown') AS road_class,
+    COUNT(*) AS count
+FROM read_parquet('s3://overturemaps-us-west-2/release/2026-01-21.0/theme=transportation/type=segment/*')
+WHERE bbox.xmin BETWEEN 4.890 AND 4.918
+  AND bbox.ymin BETWEEN 52.358 AND 52.377
+  AND subtype = 'road'
+  AND ST_Distance_Spheroid(
+        ST_FlipCoordinates(ST_PointOnSurface(geometry)),
+        ST_FlipCoordinates(ST_Point(4.9041, 52.3676))
+      ) < 1000
+GROUP BY COALESCE(class, 'unknown')
+ORDER BY count DESC;
+```
+
+---
+
+## Theme: Land Use
+
+### S3 Path
+```
+s3://overturemaps-us-west-2/release/2026-01-21.0/theme=base/type=land_use/*
+```
+
+**Important:** Land use is under the `base` theme, not a dedicated top-level theme. This is an Overture Maps organizational choice. The `base` theme also contains `land` (natural terrain) and `land_cover` (satellite-derived) types, which are not used in V1.
+
+### Key Columns
+
+| Column | Type | Description | Used By |
+|--------|------|-------------|---------|
+| `id` | string | Unique land use parcel identifier | — |
+| `names.primary` | string | Name of the land use zone (often null) | `land_use_at_point`, `land_use_search` |
+| `subtype` | string | Land use category (22 values, see below) | All land use tools |
+| `class` | string | More specific classification (95+ values) | All land use tools |
+| `geometry` | geometry (Polygon/MultiPolygon) | Land use area boundary | All land use tools |
+| `bbox.xmin` | float | Bounding box min longitude | All tools (pre-filter) |
+| `bbox.xmax` | float | Bounding box max longitude | All tools (pre-filter) |
+| `bbox.ymin` | float | Bounding box min latitude | All tools (pre-filter) |
+| `bbox.ymax` | float | Bounding box max latitude | All tools (pre-filter) |
+| `sources` | array[struct] | Data source (typically OpenStreetMap) | `land_use_at_point` |
+
+### Land Use Subtypes
+
+The `subtype` field has 22 possible values. These are the primary categories used by `land_use_composition`:
+
+| Subtype | Description | Typical Class Values |
+|---------|-------------|---------------------|
+| `residential` | Housing areas | `apartments`, `houses`, `detached`, `allotments` |
+| `commercial` | Business areas | `retail`, `office`, `hotel`, `shopping_centre` |
+| `industrial` | Manufacturing/warehousing | `warehouse`, `factory`, `depot` |
+| `institutional` | Government/civic buildings | `government`, `civic` |
+| `agriculture` | Farming land | `farmland`, `orchard`, `vineyard`, `greenhouse_horticulture` |
+| `aquaculture` | Fish/shellfish farming | `fish_farm` |
+| `recreation` | Recreational areas | `pitch`, `playground`, `golf_course`, `swimming_pool` |
+| `park` | Parks and gardens | `urban_park`, `garden`, `nature_reserve` |
+| `forest` | Forested areas | `managed_forest`, `tree_nursery` |
+| `cemetery` | Burial grounds | `cemetery` |
+| `religious` | Religious sites | `churchyard` |
+| `military` | Military installations | `military`, `barracks`, `training_area` |
+| `education` | Schools/universities | `school`, `university`, `college` |
+| `medical` | Healthcare facilities | `hospital` |
+| `transportation` | Transport infrastructure | `railway`, `bus_station` |
+| `airport` | Airports | `runway`, `taxiway`, `terminal` |
+| `port` | Ports and harbors | `port`, `dock` |
+| `dam` | Dams | `dam` |
+| `quarry` | Mining/quarrying sites | `quarry`, `mine` |
+| `landfill` | Waste disposal sites | `landfill` |
+| `brownfield` | Previously developed land | `brownfield` |
+| `greenfield` | Undeveloped land designated for development | `greenfield` |
+
+### Land Use vs Land Cover vs Land
+
+Overture's `base` theme contains three types that are sometimes confused:
+
+| Type | Source | What It Represents | Used in V1? |
+|------|--------|-------------------|-------------|
+| `land_use` | OpenStreetMap (human-mapped) | How humans use the land (zoning: residential, commercial, park) | **Yes** |
+| `land_cover` | Satellite imagery (ESA/Copernicus) | Physical surface (trees, grass, water, bare rock) | No — too granular for agent reasoning |
+| `land` | OpenStreetMap | Natural terrain features (islands, peninsulas) | No — not useful for site selection |
+
+### Sample Query: Land Use at a Point
+```sql
+-- Note: ST_Contains operates in coordinate space. No ST_FlipCoordinates needed.
+SELECT
+    subtype,
+    class,
+    names."primary" AS names_primary,
+    sources[1].dataset AS source
+FROM read_parquet('s3://overturemaps-us-west-2/release/2026-01-21.0/theme=base/type=land_use/*')
+WHERE bbox.xmin <= 4.9041 AND bbox.xmax >= 4.9041
+  AND bbox.ymin <= 52.3676 AND bbox.ymax >= 52.3676
+  AND ST_Contains(geometry, ST_Point(4.9041, 52.3676));
+```
+
+### Sample Query: Land Use Composition in 1km
+```sql
+-- Note: Land use has Polygon geometry. Same centroid pattern as buildings.
+SELECT
+    subtype,
+    COUNT(*) AS count
+FROM read_parquet('s3://overturemaps-us-west-2/release/2026-01-21.0/theme=base/type=land_use/*')
+WHERE bbox.xmin BETWEEN 4.890 AND 4.918
+  AND bbox.ymin BETWEEN 52.358 AND 52.377
+  AND ST_Distance_Spheroid(
+        ST_FlipCoordinates(ST_Centroid(geometry)),
+        ST_FlipCoordinates(ST_Point(4.9041, 52.3676))
+      ) < 1000
+GROUP BY subtype
+ORDER BY count DESC;
+```
+
+---
+
 ## Performance Notes
 
 ### Bounding Box Pre-filter
@@ -256,6 +478,8 @@ First query after server start is slower (~5-10s) because DuckDB must:
 Subsequent queries benefit from metadata caching and are typically 1-3s.
 
 ### Data Size Implications
-- **Places** (~5 GB): Fast queries, small individual records
-- **Buildings** (~50 GB): Larger dataset, polygon geometries. Keep radius small for fast results.
+- **Places** (~5 GB): Fast queries, small individual records (Point geometry).
+- **Buildings** (~50 GB): Large dataset, polygon geometries. Keep radius small for fast results.
 - **Divisions** (~2 GB): Small dataset but large individual geometries (country boundaries are complex polygons). Point-in-polygon checks can be slow for complex boundaries.
+- **Transportation** (~46 GB): Very large dataset, LineString geometries. The bbox pre-filter is critical — without it, queries would scan the entire dataset. Urban areas with dense road networks may return hundreds of segments within small radii.
+- **Land Use** (~3 GB): Moderate dataset, Polygon/MultiPolygon geometries. Similar performance characteristics to buildings but smaller. Point-in-polygon queries are fast. Radius queries use centroid-based distance (same pattern as buildings).

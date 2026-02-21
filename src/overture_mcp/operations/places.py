@@ -24,6 +24,7 @@ from overture_mcp.queries.places import (
 from overture_mcp.response import empty_response, success_response
 from overture_mcp.validation import (
     validate_category,
+    validate_include_closed,
     validate_include_geometry,
     validate_lat,
     validate_limit,
@@ -33,6 +34,54 @@ from overture_mcp.validation import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _format_address(addresses: list | None) -> str | None:
+    """Compose a single address string from Overture's structured addresses array.
+
+    Uses the first address in the array. If freeform exists, uses it as the base.
+    Otherwise composes from locality, postcode, region, country.
+    Returns None if no usable address data.
+    """
+    if not addresses or not isinstance(addresses, list) or len(addresses) == 0:
+        return None
+
+    addr = addresses[0]
+    if not isinstance(addr, dict):
+        return None
+
+    freeform = addr.get("freeform")
+    locality = addr.get("locality")
+    postcode = addr.get("postcode")
+    region = addr.get("region")
+    country = addr.get("country")
+
+    if freeform:
+        return freeform
+
+    # Compose from structured parts
+    parts = [p for p in [locality, postcode, region, country] if p]
+    return ", ".join(parts) if parts else None
+
+
+def _format_brand(brand_name: str | None, brand_wikidata: str | None) -> dict | None:
+    """Format brand info into response object.
+
+    Returns None if no brand data, otherwise {"name": ..., "wikidata": ...}.
+    """
+    if not brand_name:
+        return None
+    result: dict = {"name": brand_name}
+    if brand_wikidata:
+        result["wikidata"] = brand_wikidata
+    return result
+
+
+def _first_or_none(lst: list | None) -> str | None:
+    """Extract the first element from a list, or None if empty/null."""
+    if lst and isinstance(lst, list) and len(lst) > 0:
+        return lst[0]
+    return None
 
 
 class PlacesOperations:
@@ -79,6 +128,7 @@ class PlacesOperations:
         category = validate_category(params.get("category"), self._category_names)
         limit = validate_limit(params.get("limit"), self._config.max_results)
         include_geometry = validate_include_geometry(params.get("include_geometry"))
+        include_closed = validate_include_closed(params.get("include_closed"))
 
         query_params = {
             "lat": lat, "lng": lng, "radius_m": radius_m,
@@ -90,6 +140,7 @@ class PlacesOperations:
             lat=lat, lng=lng, radius_m=radius_m, category=category,
             data_source=self._config.places_path, limit=limit,
             include_geometry=include_geometry,
+            include_closed=include_closed,
         )
 
         rows = await self._db.execute_query(sql, sql_params)
@@ -103,6 +154,9 @@ class PlacesOperations:
             )
 
         # Format results
+        # Row layout: name, category, lat, lng, distance_m,
+        #             confidence, addresses, phones, websites,
+        #             brand_name, brand_wikidata [, geometry_wkt]
         results = []
         for row in rows:
             result: dict[str, Any] = {
@@ -111,9 +165,14 @@ class PlacesOperations:
                 "lat": row[2],
                 "lng": row[3],
                 "distance_m": row[4],
+                "confidence": row[5],
+                "address": _format_address(row[6]),
+                "phone": _first_or_none(row[7]),
+                "website": _first_or_none(row[8]),
+                "brand": _format_brand(row[9], row[10]),
             }
-            if include_geometry and len(row) > 5:
-                geom_wkt = row[5]
+            if include_geometry and len(row) > 11:
+                geom_wkt = row[11]
                 if geom_wkt and len(geom_wkt) > self._config.geometry_wkt_cap:
                     result["geometry_note"] = (
                         f"Geometry too large (>{self._config.geometry_wkt_cap} chars). "
@@ -138,6 +197,7 @@ class PlacesOperations:
             params.get("max_radius_m", 5000), self._config.max_radius_m
         )
         include_geometry = validate_include_geometry(params.get("include_geometry"))
+        include_closed = validate_include_closed(params.get("include_closed"))
 
         query_params = {
             "lat": lat, "lng": lng, "category": category,
@@ -148,6 +208,7 @@ class PlacesOperations:
             lat=lat, lng=lng, category=category,
             data_source=self._config.places_path,
             max_radius_m=max_radius_m, include_geometry=include_geometry,
+            include_closed=include_closed,
         )
 
         rows = await self._db.execute_query(sql, sql_params)
@@ -160,6 +221,9 @@ class PlacesOperations:
                            "Try increasing max_radius_m.",
             )
 
+        # Row layout: name, category, lat, lng, distance_m,
+        #             confidence, addresses, phones, websites,
+        #             brand_name, brand_wikidata [, geometry_wkt]
         row = rows[0]
         result: dict[str, Any] = {
             "name": row[0],
@@ -167,9 +231,14 @@ class PlacesOperations:
             "lat": row[2],
             "lng": row[3],
             "distance_m": row[4],
+            "confidence": row[5],
+            "address": _format_address(row[6]),
+            "phone": _first_or_none(row[7]),
+            "website": _first_or_none(row[8]),
+            "brand": _format_brand(row[9], row[10]),
         }
-        if include_geometry and len(row) > 5:
-            geom_wkt = row[5]
+        if include_geometry and len(row) > 11:
+            geom_wkt = row[11]
             if geom_wkt and len(geom_wkt) > self._config.geometry_wkt_cap:
                 result["geometry_note"] = (
                     f"Geometry too large (>{self._config.geometry_wkt_cap} chars). "
@@ -190,6 +259,7 @@ class PlacesOperations:
         lng = validate_lng(params.get("lng"))
         radius_m = validate_radius(params.get("radius_m"), self._config.max_radius_m)
         category = validate_category(params.get("category"), self._category_names)
+        include_closed = validate_include_closed(params.get("include_closed"))
 
         query_params = {
             "lat": lat, "lng": lng, "radius_m": radius_m, "category": category,
@@ -198,6 +268,7 @@ class PlacesOperations:
         sql, sql_params = count_places_query(
             lat=lat, lng=lng, radius_m=radius_m, category=category,
             data_source=self._config.places_path,
+            include_closed=include_closed,
         )
 
         rows = await self._db.execute_query(sql, sql_params)

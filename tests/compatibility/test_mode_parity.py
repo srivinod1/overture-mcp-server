@@ -13,13 +13,24 @@ from overture_mcp.server import execute_operation
 
 # All operations with valid params for Amsterdam center
 ALL_OPERATIONS = [
+    # Places
     ("get_place_categories", {"query": "coffee"}),
     ("places_in_radius", {"lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "coffee_shop"}),
     ("nearest_place_of_type", {"lat": 52.3676, "lng": 4.9041, "category": "coffee_shop"}),
     ("count_places_by_type_in_radius", {"lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "coffee_shop"}),
+    # Buildings
     ("building_count_in_radius", {"lat": 52.3676, "lng": 4.9041, "radius_m": 500}),
     ("building_class_composition", {"lat": 52.3676, "lng": 4.9041, "radius_m": 500}),
+    # Divisions
     ("point_in_admin_boundary", {"lat": 52.3676, "lng": 4.9041}),
+    # Transportation
+    ("road_count_by_class", {"lat": 52.3676, "lng": 4.9041, "radius_m": 500}),
+    ("nearest_road_of_class", {"lat": 52.3676, "lng": 4.9041, "road_class": "residential"}),
+    ("road_surface_composition", {"lat": 52.3676, "lng": 4.9041, "radius_m": 500}),
+    # Land Use
+    ("land_use_at_point", {"lat": 52.3676, "lng": 4.9041}),
+    ("land_use_composition", {"lat": 52.3676, "lng": 4.9041, "radius_m": 500}),
+    ("land_use_search", {"lat": 52.3676, "lng": 4.9041, "radius_m": 500, "subtype": "residential"}),
 ]
 
 

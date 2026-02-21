@@ -1,0 +1,654 @@
+[
+  {
+    "category": "restaurant",
+    "description": "A dining establishment serving meals"
+  },
+  {
+    "category": "cafe",
+    "description": "A casual dining establishment serving coffee, tea, and light meals"
+  },
+  {
+    "category": "coffee_shop",
+    "description": "A shop that primarily serves coffee"
+  },
+  {
+    "category": "coffee_roaster",
+    "description": "A business that roasts coffee beans"
+  },
+  {
+    "category": "tea_house",
+    "description": "A shop specializing in tea"
+  },
+  {
+    "category": "bakery",
+    "description": "A shop that bakes and sells bread and pastries"
+  },
+  {
+    "category": "bar",
+    "description": "An establishment serving alcoholic drinks"
+  },
+  {
+    "category": "pub",
+    "description": "A public house serving beer and food"
+  },
+  {
+    "category": "fast_food",
+    "description": "A quick-service restaurant"
+  },
+  {
+    "category": "pizza",
+    "description": "A restaurant specializing in pizza"
+  },
+  {
+    "category": "sushi",
+    "description": "A restaurant specializing in sushi"
+  },
+  {
+    "category": "ice_cream",
+    "description": "A shop selling ice cream"
+  },
+  {
+    "category": "juice_bar",
+    "description": "A shop selling fresh juices and smoothies"
+  },
+  {
+    "category": "food_truck",
+    "description": "A mobile food vendor"
+  },
+  {
+    "category": "deli",
+    "description": "A delicatessen selling prepared foods"
+  },
+  {
+    "category": "butcher",
+    "description": "A shop selling meat products"
+  },
+  {
+    "category": "fish_market",
+    "description": "A market selling fresh fish"
+  },
+  {
+    "category": "wine_bar",
+    "description": "An establishment specializing in wine"
+  },
+  {
+    "category": "brewery",
+    "description": "A business that brews beer"
+  },
+  {
+    "category": "steakhouse",
+    "description": "A restaurant specializing in steak"
+  },
+  {
+    "category": "supermarket",
+    "description": "A large store selling food and household items"
+  },
+  {
+    "category": "convenience_store",
+    "description": "A small store selling everyday items"
+  },
+  {
+    "category": "bookstore",
+    "description": "A store selling books"
+  },
+  {
+    "category": "clothing_store",
+    "description": "A store selling clothing"
+  },
+  {
+    "category": "electronics_store",
+    "description": "A store selling electronics"
+  },
+  {
+    "category": "furniture_store",
+    "description": "A store selling furniture"
+  },
+  {
+    "category": "hardware_store",
+    "description": "A store selling tools and hardware"
+  },
+  {
+    "category": "pet_store",
+    "description": "A store selling pet supplies"
+  },
+  {
+    "category": "florist",
+    "description": "A shop selling flowers and plants"
+  },
+  {
+    "category": "gift_shop",
+    "description": "A shop selling gifts and souvenirs"
+  },
+  {
+    "category": "jewelry_store",
+    "description": "A store selling jewelry"
+  },
+  {
+    "category": "shoe_store",
+    "description": "A store selling shoes"
+  },
+  {
+    "category": "toy_store",
+    "description": "A store selling toys"
+  },
+  {
+    "category": "sports_store",
+    "description": "A store selling sporting goods"
+  },
+  {
+    "category": "department_store",
+    "description": "A large store with multiple departments"
+  },
+  {
+    "category": "shopping_mall",
+    "description": "A large indoor shopping center"
+  },
+  {
+    "category": "market",
+    "description": "An open-air or indoor market"
+  },
+  {
+    "category": "thrift_store",
+    "description": "A store selling secondhand goods"
+  },
+  {
+    "category": "antique_store",
+    "description": "A store selling antiques"
+  },
+  {
+    "category": "art_gallery",
+    "description": "A gallery displaying and selling art"
+  },
+  {
+    "category": "hospital",
+    "description": "A medical facility for inpatient care"
+  },
+  {
+    "category": "pharmacy",
+    "description": "A store dispensing medications"
+  },
+  {
+    "category": "dentist",
+    "description": "A dental care provider"
+  },
+  {
+    "category": "doctor",
+    "description": "A general medical practitioner"
+  },
+  {
+    "category": "optician",
+    "description": "A provider of eyeglasses and eye exams"
+  },
+  {
+    "category": "veterinarian",
+    "description": "An animal medical care provider"
+  },
+  {
+    "category": "clinic",
+    "description": "A medical facility for outpatient care"
+  },
+  {
+    "category": "physiotherapist",
+    "description": "A physical therapy provider"
+  },
+  {
+    "category": "psychologist",
+    "description": "A mental health care provider"
+  },
+  {
+    "category": "nursing_home",
+    "description": "A residential care facility for elderly"
+  },
+  {
+    "category": "bank",
+    "description": "A financial institution offering banking services"
+  },
+  {
+    "category": "atm",
+    "description": "An automated teller machine"
+  },
+  {
+    "category": "insurance",
+    "description": "An insurance provider"
+  },
+  {
+    "category": "accountant",
+    "description": "An accounting and tax service"
+  },
+  {
+    "category": "financial_advisor",
+    "description": "A financial planning service"
+  },
+  {
+    "category": "currency_exchange",
+    "description": "A foreign currency exchange service"
+  },
+  {
+    "category": "credit_union",
+    "description": "A member-owned financial cooperative"
+  },
+  {
+    "category": "school",
+    "description": "An educational institution"
+  },
+  {
+    "category": "university",
+    "description": "A higher education institution"
+  },
+  {
+    "category": "kindergarten",
+    "description": "A preschool for young children"
+  },
+  {
+    "category": "library",
+    "description": "A public library"
+  },
+  {
+    "category": "language_school",
+    "description": "A school teaching languages"
+  },
+  {
+    "category": "driving_school",
+    "description": "A school teaching driving"
+  },
+  {
+    "category": "music_school",
+    "description": "A school teaching music"
+  },
+  {
+    "category": "tutoring_center",
+    "description": "A center providing tutoring services"
+  },
+  {
+    "category": "college",
+    "description": "A post-secondary educational institution"
+  },
+  {
+    "category": "research_institute",
+    "description": "A research and development institution"
+  },
+  {
+    "category": "gas_station",
+    "description": "A fuel station for vehicles"
+  },
+  {
+    "category": "parking",
+    "description": "A parking facility"
+  },
+  {
+    "category": "bus_station",
+    "description": "A bus terminal or station"
+  },
+  {
+    "category": "train_station",
+    "description": "A railway station"
+  },
+  {
+    "category": "airport",
+    "description": "An airport facility"
+  },
+  {
+    "category": "car_rental",
+    "description": "A car rental service"
+  },
+  {
+    "category": "bicycle_rental",
+    "description": "A bicycle rental service"
+  },
+  {
+    "category": "taxi_stand",
+    "description": "A designated taxi pickup point"
+  },
+  {
+    "category": "car_wash",
+    "description": "A vehicle washing facility"
+  },
+  {
+    "category": "car_repair",
+    "description": "An automotive repair shop"
+  },
+  {
+    "category": "ev_charging",
+    "description": "An electric vehicle charging station"
+  },
+  {
+    "category": "ferry_terminal",
+    "description": "A terminal for ferry services"
+  },
+  {
+    "category": "hotel",
+    "description": "A hotel providing accommodation"
+  },
+  {
+    "category": "hostel",
+    "description": "A budget accommodation"
+  },
+  {
+    "category": "motel",
+    "description": "A roadside hotel"
+  },
+  {
+    "category": "bed_and_breakfast",
+    "description": "A small lodging with breakfast"
+  },
+  {
+    "category": "campground",
+    "description": "A camping site"
+  },
+  {
+    "category": "resort",
+    "description": "A vacation resort"
+  },
+  {
+    "category": "apartment_rental",
+    "description": "A short-term apartment rental"
+  },
+  {
+    "category": "cinema",
+    "description": "A movie theater"
+  },
+  {
+    "category": "theater",
+    "description": "A performing arts theater"
+  },
+  {
+    "category": "museum",
+    "description": "A museum exhibiting collections"
+  },
+  {
+    "category": "zoo",
+    "description": "A zoological garden"
+  },
+  {
+    "category": "aquarium",
+    "description": "An aquatic animal exhibit"
+  },
+  {
+    "category": "amusement_park",
+    "description": "An amusement or theme park"
+  },
+  {
+    "category": "nightclub",
+    "description": "A nighttime entertainment venue"
+  },
+  {
+    "category": "casino",
+    "description": "A gambling establishment"
+  },
+  {
+    "category": "bowling_alley",
+    "description": "A bowling facility"
+  },
+  {
+    "category": "escape_room",
+    "description": "An escape room entertainment venue"
+  },
+  {
+    "category": "concert_hall",
+    "description": "A venue for concerts and performances"
+  },
+  {
+    "category": "gym",
+    "description": "A fitness center or gym"
+  },
+  {
+    "category": "swimming_pool",
+    "description": "A public swimming pool"
+  },
+  {
+    "category": "tennis_court",
+    "description": "A tennis facility"
+  },
+  {
+    "category": "golf_course",
+    "description": "A golf course"
+  },
+  {
+    "category": "yoga_studio",
+    "description": "A yoga and meditation studio"
+  },
+  {
+    "category": "martial_arts",
+    "description": "A martial arts training center"
+  },
+  {
+    "category": "stadium",
+    "description": "A sports stadium"
+  },
+  {
+    "category": "sports_field",
+    "description": "An outdoor sports field"
+  },
+  {
+    "category": "climbing_gym",
+    "description": "An indoor climbing facility"
+  },
+  {
+    "category": "skating_rink",
+    "description": "An ice or roller skating rink"
+  },
+  {
+    "category": "post_office",
+    "description": "A postal service office"
+  },
+  {
+    "category": "courier",
+    "description": "A courier and delivery service"
+  },
+  {
+    "category": "laundry",
+    "description": "A laundry or dry cleaning service"
+  },
+  {
+    "category": "barber",
+    "description": "A barbershop"
+  },
+  {
+    "category": "hair_salon",
+    "description": "A hair styling salon"
+  },
+  {
+    "category": "beauty_salon",
+    "description": "A beauty and cosmetics salon"
+  },
+  {
+    "category": "spa",
+    "description": "A spa and wellness center"
+  },
+  {
+    "category": "tailor",
+    "description": "A clothing alteration and tailoring service"
+  },
+  {
+    "category": "locksmith",
+    "description": "A lock and key service"
+  },
+  {
+    "category": "plumber",
+    "description": "A plumbing service"
+  },
+  {
+    "category": "electrician",
+    "description": "An electrical service"
+  },
+  {
+    "category": "moving_company",
+    "description": "A moving and relocation service"
+  },
+  {
+    "category": "real_estate",
+    "description": "A real estate agency"
+  },
+  {
+    "category": "lawyer",
+    "description": "A legal services firm"
+  },
+  {
+    "category": "notary",
+    "description": "A notary public"
+  },
+  {
+    "category": "translator",
+    "description": "A translation service"
+  },
+  {
+    "category": "print_shop",
+    "description": "A printing service"
+  },
+  {
+    "category": "photographer",
+    "description": "A photography service"
+  },
+  {
+    "category": "funeral_home",
+    "description": "A funeral and mortuary service"
+  },
+  {
+    "category": "travel_agency",
+    "description": "A travel booking agency"
+  },
+  {
+    "category": "police_station",
+    "description": "A police station"
+  },
+  {
+    "category": "fire_station",
+    "description": "A fire station"
+  },
+  {
+    "category": "city_hall",
+    "description": "A municipal government building"
+  },
+  {
+    "category": "embassy",
+    "description": "A foreign embassy or consulate"
+  },
+  {
+    "category": "courthouse",
+    "description": "A court of law"
+  },
+  {
+    "category": "community_center",
+    "description": "A community gathering place"
+  },
+  {
+    "category": "recycling_center",
+    "description": "A waste recycling facility"
+  },
+  {
+    "category": "church",
+    "description": "A Christian church"
+  },
+  {
+    "category": "mosque",
+    "description": "An Islamic mosque"
+  },
+  {
+    "category": "synagogue",
+    "description": "A Jewish synagogue"
+  },
+  {
+    "category": "temple",
+    "description": "A religious temple"
+  },
+  {
+    "category": "park",
+    "description": "A public park"
+  },
+  {
+    "category": "garden",
+    "description": "A public or botanical garden"
+  },
+  {
+    "category": "nature_reserve",
+    "description": "A protected natural area"
+  },
+  {
+    "category": "beach",
+    "description": "A beach or waterfront area"
+  },
+  {
+    "category": "playground",
+    "description": "A children's playground"
+  },
+  {
+    "category": "coworking_space",
+    "description": "A shared workspace for professionals"
+  },
+  {
+    "category": "data_center",
+    "description": "A data storage and processing facility"
+  },
+  {
+    "category": "tech_startup",
+    "description": "A technology startup company"
+  },
+  {
+    "category": "computer_repair",
+    "description": "A computer repair service"
+  },
+  {
+    "category": "internet_cafe",
+    "description": "A cafe with internet access"
+  },
+  {
+    "category": "warehouse",
+    "description": "A storage warehouse"
+  },
+  {
+    "category": "factory",
+    "description": "A manufacturing facility"
+  },
+  {
+    "category": "construction_site",
+    "description": "An active construction site"
+  },
+  {
+    "category": "power_plant",
+    "description": "An electrical power generation facility"
+  },
+  {
+    "category": "water_treatment",
+    "description": "A water treatment facility"
+  },
+  {
+    "category": "dog_park",
+    "description": "A park designated for dogs"
+  },
+  {
+    "category": "car_dealership",
+    "description": "An automobile dealership"
+  },
+  {
+    "category": "bike_shop",
+    "description": "A bicycle sales and repair shop"
+  },
+  {
+    "category": "pawn_shop",
+    "description": "A pawn and loan shop"
+  },
+  {
+    "category": "vape_shop",
+    "description": "A vaporizer and e-cigarette shop"
+  },
+  {
+    "category": "tattoo_parlor",
+    "description": "A tattoo and body art studio"
+  },
+  {
+    "category": "event_venue",
+    "description": "A venue for events and conferences"
+  },
+  {
+    "category": "wedding_venue",
+    "description": "A venue for wedding ceremonies"
+  },
+  {
+    "category": "storage_facility",
+    "description": "A self-storage facility"
+  },
+  {
+    "category": "cemetery",
+    "description": "A burial ground"
+  }
+]

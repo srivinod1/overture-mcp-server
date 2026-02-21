@@ -20,6 +20,7 @@ def places_in_radius_query(
     data_source: str,
     limit: int = 20,
     include_geometry: bool = False,
+    include_closed: bool = False,
 ) -> tuple[str, list]:
     """Build SQL to find places matching a category within a radius.
 
@@ -31,6 +32,7 @@ def places_in_radius_query(
         data_source: Parquet data source path or view name.
         limit: Maximum results to return.
         include_geometry: Whether to include WKT geometry in results.
+        include_closed: Whether to include permanently closed places.
 
     Returns:
         Tuple of (sql_string, params_list).
@@ -39,7 +41,12 @@ def places_in_radius_query(
 
     geometry_col = ""
     if include_geometry:
-        geometry_col = ",\n        ST_AsText(geometry) AS geometry"
+        geometry_col = ",\n        ST_AsText(geometry) AS geometry_wkt"
+
+    # By default exclude permanently_closed places
+    closed_filter = ""
+    if not include_closed:
+        closed_filter = "\n      AND COALESCE(operating_status, 'open') != 'permanently_closed'"
 
     sql = f"""SELECT
         names."primary" AS name,
@@ -49,7 +56,13 @@ def places_in_radius_query(
         CAST(ST_Distance_Spheroid(
             ST_FlipCoordinates(geometry),
             ST_FlipCoordinates(ST_Point(?, ?))
-        ) AS INTEGER) AS distance_m{geometry_col}
+        ) AS INTEGER) AS distance_m,
+        confidence,
+        addresses,
+        phones,
+        websites,
+        brand.names."primary" AS brand_name,
+        brand.wikidata AS brand_wikidata{geometry_col}
     FROM {data_source}
     WHERE bbox.xmin BETWEEN ? AND ?
       AND bbox.ymin BETWEEN ? AND ?
@@ -57,7 +70,7 @@ def places_in_radius_query(
             ST_FlipCoordinates(geometry),
             ST_FlipCoordinates(ST_Point(?, ?))
           ) < ?
-      AND categories."primary" = ?
+      AND categories."primary" = ?{closed_filter}
     ORDER BY distance_m ASC
     LIMIT ?"""
 
@@ -81,6 +94,7 @@ def nearest_place_query(
     data_source: str,
     max_radius_m: int = 5000,
     include_geometry: bool = False,
+    include_closed: bool = False,
 ) -> tuple[str, list]:
     """Build SQL to find the single closest place of a given type.
 
@@ -93,6 +107,7 @@ def nearest_place_query(
         data_source: Parquet data source path or view name.
         max_radius_m: Maximum search radius in meters.
         include_geometry: Whether to include WKT geometry.
+        include_closed: Whether to include permanently closed places.
 
     Returns:
         Tuple of (sql_string, params_list).
@@ -105,6 +120,7 @@ def nearest_place_query(
         data_source=data_source,
         limit=1,
         include_geometry=include_geometry,
+        include_closed=include_closed,
     )
 
 
@@ -114,6 +130,7 @@ def count_places_query(
     radius_m: int,
     category: str,
     data_source: str,
+    include_closed: bool = False,
 ) -> tuple[str, list]:
     """Build SQL to count places of a category in an area.
 
@@ -123,11 +140,16 @@ def count_places_query(
         radius_m: Search radius in meters.
         category: Overture category ID.
         data_source: Parquet data source path or view name.
+        include_closed: Whether to include permanently closed places.
 
     Returns:
         Tuple of (sql_string, params_list).
     """
     lat_min, lat_max, lng_min, lng_max = compute_bbox(lat, lng, radius_m)
+
+    closed_filter = ""
+    if not include_closed:
+        closed_filter = "\n      AND COALESCE(operating_status, 'open') != 'permanently_closed'"
 
     sql = f"""SELECT COUNT(*) AS count
     FROM {data_source}
@@ -137,7 +159,7 @@ def count_places_query(
             ST_FlipCoordinates(geometry),
             ST_FlipCoordinates(ST_Point(?, ?))
           ) < ?
-      AND categories."primary" = ?"""
+      AND categories."primary" = ?{closed_filter}"""
 
     params = [
         lng_min, lng_max,

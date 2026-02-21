@@ -18,7 +18,8 @@ Set these in the Railway dashboard under your service's Variables tab:
 
 | Variable | Required | Value | Notes |
 |----------|----------|-------|-------|
-| `OVERTURE_API_KEY` | Yes | Your chosen API key | Shared with MCP clients |
+| `OVERTURE_API_KEY` | Yes | Your chosen API key | Clients send as `Authorization: Bearer <key>` |
+| `TRANSPORT` | No | `sse` | Set to `sse` for hosted deployments |
 | `TOOL_MODE` | No | `direct` | `direct` (default) or `progressive` |
 | `OVERTURE_DATA_VERSION` | No | `2026-01-21.0` | Override to use different Overture release |
 | `MAX_CONCURRENT_QUERIES` | No | `3` | DuckDB query concurrency limit |
@@ -75,6 +76,7 @@ git push origin main
 
 ```bash
 railway variables set OVERTURE_API_KEY=your-secret-key-here
+railway variables set TRANSPORT=sse
 ```
 
 ### 5. Verify
@@ -89,40 +91,6 @@ curl https://your-app.up.railway.app/health
 # Expected response:
 # {"status": "healthy", "data_version": "2026-01-21.0", "uptime_seconds": 42}
 ```
-
----
-
-## Dockerfile
-
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-# Install system dependencies for DuckDB spatial
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgeos-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Python dependencies
-COPY pyproject.toml .
-RUN pip install --no-cache-dir .
-
-# Copy application code
-COPY src/ src/
-
-# Expose port
-EXPOSE 8000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
-
-# Start server
-CMD ["python", "-m", "overture_mcp.server"]
-```
-
-**Note**: The `start-period=60s` is generous because the first DuckDB query (during health check) needs to establish S3 connections and read Parquet metadata.
 
 ---
 
@@ -190,7 +158,7 @@ No code changes needed. No data migration. The server reads the version from the
 
 ## Connecting Clients
 
-### Claude Desktop
+### Claude Desktop (remote SSE)
 Add to `claude_desktop_config.json`:
 ```json
 {
@@ -198,14 +166,14 @@ Add to `claude_desktop_config.json`:
     "overture-maps": {
       "url": "https://your-app.up.railway.app/sse",
       "headers": {
-        "X-API-Key": "your-api-key"
+        "Authorization": "Bearer your-api-key"
       }
     }
   }
 }
 ```
 
-### Claude Code
+### Claude Code (remote SSE)
 Add to MCP settings:
 ```json
 {
@@ -213,7 +181,7 @@ Add to MCP settings:
     "overture-maps": {
       "url": "https://your-app.up.railway.app/sse",
       "headers": {
-        "X-API-Key": "your-api-key"
+        "Authorization": "Bearer your-api-key"
       }
     }
   }
@@ -223,7 +191,7 @@ Add to MCP settings:
 ### Any MCP Client
 The server exposes SSE transport at `/sse`. Connect with any MCP-compatible client using:
 - **URL**: `https://your-app.up.railway.app/sse`
-- **Header**: `X-API-Key: your-api-key`
+- **Header**: `Authorization: Bearer your-api-key`
 
 ---
 
@@ -244,11 +212,12 @@ The server exposes SSE transport at `/sse`. Connect with any MCP-compatible clie
 - Large building queries (>5km radius) consume significant memory
 
 ### Health check fails
-- The `/health` endpoint runs a trivial DuckDB query against S3
-- On cold start, this can take up to 60s (hence the generous `start-period`)
+- The `/health` endpoint is only available on HTTP transports (SSE, Streamable HTTP)
+- On cold start, DuckDB extension loading can take a few seconds
 - If it keeps failing, check S3 connectivity (Overture bucket availability)
 
 ### Authentication errors
 - Verify `OVERTURE_API_KEY` is set in Railway variables
-- Verify client sends `X-API-Key` header with matching value
+- Verify client sends `Authorization: Bearer <key>` header with matching value
 - Check for trailing whitespace in the API key
+- Auth is only enforced on HTTP transports — stdio transport (local) has no auth

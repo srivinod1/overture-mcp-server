@@ -100,3 +100,62 @@ class TestEmptyDivisionResults:
         assert result["count"] == 0
         assert result["suggestion"] is not None
         assert "international waters" in result["suggestion"] or "limited coverage" in result["suggestion"]
+
+
+@pytest.mark.asyncio
+class TestEmptyTransportationResults:
+    """Test empty result handling for transportation operations."""
+
+    async def test_no_roads_at_ocean(self, test_registry):
+        result = await execute_operation(test_registry, "road_count_by_class", {
+            "lat": 0.0, "lng": 0.0, "radius_m": 500,
+        })
+        assert result["count"] == 0
+        assert result["suggestion"] is not None
+
+    async def test_no_nearest_road_at_ocean(self, test_registry):
+        result = await execute_operation(test_registry, "nearest_road_of_class", {
+            "lat": 0.0, "lng": 0.0, "road_class": "residential",
+        })
+        assert result["count"] == 0
+        assert result["suggestion"] is not None
+
+    async def test_no_surface_composition_at_ocean(self, test_registry):
+        result = await execute_operation(test_registry, "road_surface_composition", {
+            "lat": 0.0, "lng": 0.0, "radius_m": 500,
+        })
+        assert result["count"] == 0
+        assert result["suggestion"] is not None
+
+
+@pytest.mark.asyncio
+class TestEmptyLandUseResults:
+    """Test empty result handling for land use operations."""
+
+    async def test_no_land_use_at_ocean(self, test_registry):
+        result = await execute_operation(test_registry, "land_use_at_point", {
+            "lat": 0.0, "lng": 0.0,
+        })
+        assert result["count"] == 0
+        assert result["suggestion"] is not None
+
+    async def test_no_composition_at_ocean(self, test_registry):
+        result = await execute_operation(test_registry, "land_use_composition", {
+            "lat": 0.0, "lng": 0.0, "radius_m": 500,
+        })
+        assert result["count"] == 0
+        assert result["suggestion"] is not None
+
+    async def test_no_search_results_at_ocean(self, test_registry):
+        result = await execute_operation(test_registry, "land_use_search", {
+            "lat": 0.0, "lng": 0.0, "radius_m": 500, "subtype": "residential",
+        })
+        assert result["count"] == 0
+        assert result["suggestion"] is not None
+
+    async def test_tiny_radius_misses_all_land_use(self, test_registry):
+        """1m radius should miss all land use parcels."""
+        result = await execute_operation(test_registry, "land_use_search", {
+            "lat": 52.3676, "lng": 4.9041, "radius_m": 1, "subtype": "residential",
+        })
+        assert result["count"] == 0

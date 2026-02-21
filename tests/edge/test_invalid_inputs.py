@@ -122,3 +122,63 @@ class TestExtraParams:
             "another_extra": 42,
         })
         assert "error" not in result
+
+
+@pytest.mark.asyncio
+class TestTransportationInvalidInputs:
+    """Invalid inputs for transportation operations."""
+
+    async def test_missing_road_class(self, test_registry):
+        """nearest_road_of_class requires road_class."""
+        result = await execute_operation(test_registry, "nearest_road_of_class", {
+            "lat": 52.3676, "lng": 4.9041,
+        })
+        assert "error" in result
+
+    async def test_invalid_road_class(self, test_registry):
+        result = await execute_operation(test_registry, "nearest_road_of_class", {
+            "lat": 52.3676, "lng": 4.9041, "road_class": "spaceway",
+        })
+        assert "error" in result
+        assert result["error_type"] == "validation_error"
+
+    async def test_road_count_missing_radius(self, test_registry):
+        result = await execute_operation(test_registry, "road_count_by_class", {
+            "lat": 52.3676, "lng": 4.9041,
+        })
+        assert "error" in result
+
+    async def test_road_surface_nan_lat(self, test_registry):
+        result = await execute_operation(test_registry, "road_surface_composition", {
+            "lat": float("nan"), "lng": 4.9041, "radius_m": 500,
+        })
+        assert "error" in result
+
+
+@pytest.mark.asyncio
+class TestLandUseInvalidInputs:
+    """Invalid inputs for land use operations."""
+
+    async def test_missing_subtype_for_search(self, test_registry):
+        """land_use_search requires subtype."""
+        result = await execute_operation(test_registry, "land_use_search", {
+            "lat": 52.3676, "lng": 4.9041, "radius_m": 500,
+        })
+        assert "error" in result
+
+    async def test_invalid_subtype(self, test_registry):
+        result = await execute_operation(test_registry, "land_use_search", {
+            "lat": 52.3676, "lng": 4.9041, "radius_m": 500, "subtype": "moonbase",
+        })
+        assert "error" in result
+        assert result["error_type"] == "validation_error"
+
+    async def test_land_use_at_point_missing_params(self, test_registry):
+        result = await execute_operation(test_registry, "land_use_at_point", {})
+        assert "error" in result
+
+    async def test_land_use_composition_inf_lng(self, test_registry):
+        result = await execute_operation(test_registry, "land_use_composition", {
+            "lat": 52.3676, "lng": float("inf"), "radius_m": 500,
+        })
+        assert "error" in result

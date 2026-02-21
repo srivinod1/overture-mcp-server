@@ -65,6 +65,8 @@ class ServerConfig:
     _places_source: str | None = None
     _buildings_source: str | None = None
     _divisions_source: str | None = None
+    _transportation_source: str | None = None
+    _land_use_source: str | None = None
 
     def __post_init__(self):
         """Validate config values after initialization."""
@@ -122,6 +124,23 @@ class ServerConfig:
             return self._divisions_source
         return self.s3_path("divisions", "division_area")
 
+    @property
+    def transportation_path(self) -> str:
+        """Data source for transportation segments (S3 path or local override)."""
+        if self._transportation_source:
+            return self._transportation_source
+        return self.s3_path("transportation", "segment")
+
+    @property
+    def land_use_path(self) -> str:
+        """Data source for land use (S3 path or local override).
+
+        Note: Land use is under the 'base' theme, not a dedicated theme.
+        """
+        if self._land_use_source:
+            return self._land_use_source
+        return self.s3_path("base", "land_use")
+
 
 # ---------------------------------------------------------------------------
 # Loader
@@ -131,24 +150,36 @@ def load_config() -> ServerConfig:
     """Load server configuration from environment variables.
 
     Environment variables:
-        OVERTURE_API_KEY: Required. API key for client authentication.
+        OVERTURE_API_KEY: API key for client authentication.
+                         Required for HTTP/SSE transports.
+                         Optional for stdio transport (local only).
         TOOL_MODE: Optional. "direct" (default) or "progressive".
         OVERTURE_DATA_VERSION: Optional. Overture release version.
         MAX_CONCURRENT_QUERIES: Optional. DuckDB query concurrency limit.
         MAX_RADIUS_M: Optional. Safety cap on radius queries.
         PORT: Optional. Server port.
+        TRANSPORT: Optional. "stdio" (default), "sse", or "http".
 
     Returns:
         ServerConfig instance.
 
     Raises:
-        ValueError: If OVERTURE_API_KEY is not set or config values are invalid.
+        ValueError: If required env vars are missing or config values are invalid.
     """
     api_key = os.environ.get("OVERTURE_API_KEY", "")
-    if not api_key:
+    transport = os.environ.get("TRANSPORT", "stdio").lower()
+
+    if not api_key and transport != "stdio":
         raise ValueError(
-            "OVERTURE_API_KEY environment variable is required. "
-            "Set it to a shared secret for client authentication."
+            "OVERTURE_API_KEY environment variable is required for "
+            f"'{transport}' transport. Set it to a shared secret for "
+            "client authentication."
+        )
+
+    if not api_key and transport == "stdio":
+        import logging
+        logging.getLogger(__name__).info(
+            "No OVERTURE_API_KEY set. Auth disabled (stdio transport)."
         )
 
     return ServerConfig(

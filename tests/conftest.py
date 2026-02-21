@@ -24,6 +24,8 @@ FIXTURES_DIR = pathlib.Path(__file__).parent / "fixtures"
 PLACES_PARQUET = str(FIXTURES_DIR / "sample_places.parquet")
 BUILDINGS_PARQUET = str(FIXTURES_DIR / "sample_buildings.parquet")
 DIVISIONS_PARQUET = str(FIXTURES_DIR / "sample_divisions.parquet")
+ROADS_PARQUET = str(FIXTURES_DIR / "sample_roads.parquet")
+LAND_USE_PARQUET = str(FIXTURES_DIR / "sample_land_use.parquet")
 CATEGORIES_JSON = str(FIXTURES_DIR / "categories.json")
 
 
@@ -112,6 +114,8 @@ def loaded_fixture_db() -> duckdb.DuckDBPyConnection:
       - places: 50 records from sample_places.parquet
       - buildings: 50 records from sample_buildings.parquet
       - divisions: 10 records from sample_divisions.parquet
+      - roads: 50 records from sample_roads.parquet
+      - land_use: 30 records from sample_land_use.parquet
 
     Shared across all tests in a session for speed.
     Uses views (not tables) so the parquet files are the source of truth.
@@ -123,14 +127,20 @@ def loaded_fixture_db() -> duckdb.DuckDBPyConnection:
     conn.execute(f"CREATE VIEW places AS SELECT * FROM read_parquet('{PLACES_PARQUET}')")
     conn.execute(f"CREATE VIEW buildings AS SELECT * FROM read_parquet('{BUILDINGS_PARQUET}')")
     conn.execute(f"CREATE VIEW divisions AS SELECT * FROM read_parquet('{DIVISIONS_PARQUET}')")
+    conn.execute(f"CREATE VIEW roads AS SELECT * FROM read_parquet('{ROADS_PARQUET}')")
+    conn.execute(f"CREATE VIEW land_use AS SELECT * FROM read_parquet('{LAND_USE_PARQUET}')")
 
     # Sanity check: verify data loaded correctly
     place_count = conn.execute("SELECT COUNT(*) FROM places").fetchone()[0]
     building_count = conn.execute("SELECT COUNT(*) FROM buildings").fetchone()[0]
     division_count = conn.execute("SELECT COUNT(*) FROM divisions").fetchone()[0]
+    road_count = conn.execute("SELECT COUNT(*) FROM roads").fetchone()[0]
+    land_use_count = conn.execute("SELECT COUNT(*) FROM land_use").fetchone()[0]
     assert place_count == 50, f"Expected 50 places, got {place_count}"
     assert building_count == 50, f"Expected 50 buildings, got {building_count}"
     assert division_count == 10, f"Expected 10 divisions, got {division_count}"
+    assert road_count == 50, f"Expected 50 roads, got {road_count}"
+    assert land_use_count == 30, f"Expected 30 land_use, got {land_use_count}"
 
     return conn
 
@@ -147,9 +157,18 @@ def known_coffee_shop_count() -> int:
 
 @pytest.fixture(scope="session")
 def known_coffee_shops_within_500m() -> int:
-    """Number of coffee shops within 500m of amsterdam_center.
+    """Number of open/temporarily_closed coffee shops within 500m of amsterdam_center.
+
     Includes Java Junction at ~496m, excludes Far Away Beans at ~506m.
+    Excludes Mokum Coffee (permanently_closed) by default.
+    Total within 500m is 9, but 1 is permanently_closed = 8 returned by default.
     """
+    return 8
+
+
+@pytest.fixture(scope="session")
+def known_coffee_shops_within_500m_including_closed() -> int:
+    """Total coffee shops within 500m including permanently closed ones."""
     return 9
 
 
@@ -209,6 +228,18 @@ def divisions_parquet_path() -> str:
     return DIVISIONS_PARQUET
 
 
+@pytest.fixture(scope="session")
+def roads_parquet_path() -> str:
+    """Absolute path to the roads fixture parquet file."""
+    return ROADS_PARQUET
+
+
+@pytest.fixture(scope="session")
+def land_use_parquet_path() -> str:
+    """Absolute path to the land use fixture parquet file."""
+    return LAND_USE_PARQUET
+
+
 # ---------------------------------------------------------------------------
 # Operation test fixtures (for integration tests)
 # ---------------------------------------------------------------------------
@@ -222,6 +253,8 @@ def test_config() -> "ServerConfig":
         _places_source="places",
         _buildings_source="buildings",
         _divisions_source="divisions",
+        _transportation_source="roads",
+        _land_use_source="land_use",
     )
 
 
@@ -237,6 +270,8 @@ def test_db() -> "Database":
         places_path=PLACES_PARQUET,
         buildings_path=BUILDINGS_PARQUET,
         divisions_path=DIVISIONS_PARQUET,
+        transportation_path=ROADS_PARQUET,
+        land_use_path=LAND_USE_PARQUET,
     )
     return db
 

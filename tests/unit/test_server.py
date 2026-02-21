@@ -54,7 +54,7 @@ class TestBuildRegistry:
 
     def test_registers_all_operations(self, test_db, test_config, category_taxonomy):
         registry = build_registry(test_db, test_config, category_taxonomy)
-        assert registry.count == 7
+        assert registry.count == 13
 
     def test_has_places_operations(self, test_db, test_config, category_taxonomy):
         registry = build_registry(test_db, test_config, category_taxonomy)
@@ -72,6 +72,18 @@ class TestBuildRegistry:
         registry = build_registry(test_db, test_config, category_taxonomy)
         assert "point_in_admin_boundary" in registry
 
+    def test_has_transportation_operations(self, test_db, test_config, category_taxonomy):
+        registry = build_registry(test_db, test_config, category_taxonomy)
+        assert "road_count_by_class" in registry
+        assert "nearest_road_of_class" in registry
+        assert "road_surface_composition" in registry
+
+    def test_has_land_use_operations(self, test_db, test_config, category_taxonomy):
+        registry = build_registry(test_db, test_config, category_taxonomy)
+        assert "land_use_at_point" in registry
+        assert "land_use_composition" in registry
+        assert "land_use_search" in registry
+
     def test_all_operations_have_handlers(self, test_db, test_config, category_taxonomy):
         registry = build_registry(test_db, test_config, category_taxonomy)
         for op in registry:
@@ -86,7 +98,7 @@ class TestBuildRegistry:
         registry = build_registry(test_db, test_config, category_taxonomy)
         ops = registry.list_operations()
         themes = {o["theme"] for o in ops}
-        assert themes == {"places", "buildings", "divisions"}
+        assert themes == {"places", "buildings", "divisions", "transportation", "land_use"}
 
 
 class TestExecuteOperation:

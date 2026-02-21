@@ -38,3 +38,9 @@ htmlcov/
 # Distribution
 *.tar.gz
 *.whl
+
+# Claude Code
+.claude/
+
+# Benchmarks
+.benchmarks/

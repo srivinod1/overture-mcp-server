@@ -15,7 +15,12 @@ to DuckDB without SQL errors.
 
 import pytest
 from overture_mcp.server import execute_operation
-from overture_mcp.validation import ValidationError, validate_category
+from overture_mcp.validation import (
+    ValidationError,
+    validate_category,
+    validate_land_use_subtype,
+    validate_road_class,
+)
 
 
 class TestCategoryInjection:
@@ -142,3 +147,62 @@ class TestNumericInjection:
             "limit": "20; DROP TABLE places",
         })
         assert "error" in result
+
+
+class TestRoadClassInjection:
+    """SQL injection payloads in the road_class parameter."""
+
+    INJECTION_PAYLOADS = [
+        "'; DROP TABLE roads; --",
+        "' OR '1'='1",
+        "residential' UNION SELECT * FROM information_schema.tables --",
+        "residential; INSERT INTO roads VALUES(1,2,3)",
+        "residential/**/OR/**/1=1",
+    ]
+
+    @pytest.mark.parametrize("payload", INJECTION_PAYLOADS)
+    def test_road_class_validation_rejects_injection(self, payload):
+        """All injection payloads should be rejected by validate_road_class."""
+        with pytest.raises(ValidationError) as exc_info:
+            validate_road_class(payload)
+        assert "Unknown road_class" in exc_info.value.message
+
+    @pytest.mark.parametrize("payload", INJECTION_PAYLOADS)
+    @pytest.mark.asyncio
+    async def test_nearest_road_rejects_injection(self, test_registry, payload):
+        """nearest_road_of_class should reject injection payloads."""
+        result = await execute_operation(test_registry, "nearest_road_of_class", {
+            "lat": 52.3676, "lng": 4.9041,
+            "road_class": payload,
+        })
+        assert "error" in result
+        assert result["error_type"] == "validation_error"
+
+
+class TestLandUseSubtypeInjection:
+    """SQL injection payloads in the land use subtype parameter."""
+
+    INJECTION_PAYLOADS = [
+        "'; DROP TABLE land_use; --",
+        "' OR '1'='1",
+        "residential' UNION SELECT * FROM information_schema.tables --",
+        "park; DELETE FROM land_use",
+    ]
+
+    @pytest.mark.parametrize("payload", INJECTION_PAYLOADS)
+    def test_subtype_validation_rejects_injection(self, payload):
+        """All injection payloads should be rejected by validate_land_use_subtype."""
+        with pytest.raises(ValidationError) as exc_info:
+            validate_land_use_subtype(payload)
+        assert "Unknown land use subtype" in exc_info.value.message
+
+    @pytest.mark.parametrize("payload", INJECTION_PAYLOADS)
+    @pytest.mark.asyncio
+    async def test_land_use_search_rejects_injection(self, test_registry, payload):
+        """land_use_search should reject injection payloads."""
+        result = await execute_operation(test_registry, "land_use_search", {
+            "lat": 52.3676, "lng": 4.9041, "radius_m": 500,
+            "subtype": payload,
+        })
+        assert "error" in result
+        assert result["error_type"] == "validation_error"

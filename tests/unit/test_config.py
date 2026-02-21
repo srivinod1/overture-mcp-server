@@ -86,15 +86,33 @@ class TestS3Paths:
 class TestLoadConfig:
     """Tests for load_config function."""
 
-    def test_missing_api_key(self, monkeypatch):
+    def test_missing_api_key_sse_transport(self, monkeypatch):
+        """API key is required for SSE transport."""
         monkeypatch.delenv("OVERTURE_API_KEY", raising=False)
+        monkeypatch.setenv("TRANSPORT", "sse")
         with pytest.raises(ValueError, match="OVERTURE_API_KEY"):
             load_config()
 
-    def test_empty_api_key(self, monkeypatch):
+    def test_empty_api_key_http_transport(self, monkeypatch):
+        """Empty API key is rejected for HTTP transport."""
         monkeypatch.setenv("OVERTURE_API_KEY", "")
+        monkeypatch.setenv("TRANSPORT", "http")
         with pytest.raises(ValueError, match="OVERTURE_API_KEY"):
             load_config()
+
+    def test_missing_api_key_stdio_ok(self, monkeypatch):
+        """API key is optional for stdio transport (local only)."""
+        monkeypatch.delenv("OVERTURE_API_KEY", raising=False)
+        monkeypatch.delenv("TRANSPORT", raising=False)
+        config = load_config()
+        assert config.api_key == ""
+
+    def test_missing_api_key_stdio_explicit(self, monkeypatch):
+        """Explicit stdio transport allows missing API key."""
+        monkeypatch.delenv("OVERTURE_API_KEY", raising=False)
+        monkeypatch.setenv("TRANSPORT", "stdio")
+        config = load_config()
+        assert config.api_key == ""
 
     def test_valid_api_key(self, monkeypatch):
         monkeypatch.setenv("OVERTURE_API_KEY", "my-secret-key")

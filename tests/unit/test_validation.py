@@ -9,8 +9,11 @@ from overture_mcp.validation import (
     validate_radius,
     validate_limit,
     validate_category,
+    validate_include_closed,
     validate_include_geometry,
+    validate_land_use_subtype,
     validate_query,
+    validate_road_class,
 )
 
 
@@ -240,3 +243,120 @@ class TestValidateQuery:
     def test_non_string_raises(self):
         with pytest.raises(ValidationError, match="must be a string"):
             validate_query(123)
+
+
+class TestValidateRoadClass:
+    """Tests for road_class validation."""
+
+    def test_valid_residential(self):
+        assert validate_road_class("residential") == "residential"
+
+    def test_valid_motorway(self):
+        assert validate_road_class("motorway") == "motorway"
+
+    def test_valid_cycleway(self):
+        assert validate_road_class("cycleway") == "cycleway"
+
+    def test_case_insensitive(self):
+        assert validate_road_class("Residential") == "residential"
+
+    def test_strips_whitespace(self):
+        assert validate_road_class("  primary  ") == "primary"
+
+    def test_unknown_class(self):
+        with pytest.raises(ValidationError, match="Unknown road_class"):
+            validate_road_class("spaceway")
+
+    def test_empty_string(self):
+        with pytest.raises(ValidationError, match="non-empty string"):
+            validate_road_class("")
+
+    def test_none(self):
+        with pytest.raises(ValidationError, match="non-empty string"):
+            validate_road_class(None)
+
+    def test_sql_injection_payload(self):
+        with pytest.raises(ValidationError, match="Unknown road_class"):
+            validate_road_class("'; DROP TABLE roads; --")
+
+    def test_all_valid_classes(self):
+        """Every valid road class should pass validation."""
+        valid = [
+            "motorway", "trunk", "primary", "secondary", "tertiary",
+            "residential", "service", "footway", "cycleway", "path",
+            "track", "unclassified",
+        ]
+        for cls in valid:
+            assert validate_road_class(cls) == cls
+
+
+class TestValidateLandUseSubtype:
+    """Tests for land_use_subtype validation."""
+
+    def test_valid_residential(self):
+        assert validate_land_use_subtype("residential") == "residential"
+
+    def test_valid_park(self):
+        assert validate_land_use_subtype("park") == "park"
+
+    def test_valid_commercial(self):
+        assert validate_land_use_subtype("commercial") == "commercial"
+
+    def test_case_insensitive(self):
+        assert validate_land_use_subtype("Residential") == "residential"
+
+    def test_strips_whitespace(self):
+        assert validate_land_use_subtype("  park  ") == "park"
+
+    def test_unknown_subtype(self):
+        with pytest.raises(ValidationError, match="Unknown land use subtype"):
+            validate_land_use_subtype("moonbase")
+
+    def test_empty_string(self):
+        with pytest.raises(ValidationError, match="non-empty string"):
+            validate_land_use_subtype("")
+
+    def test_none(self):
+        with pytest.raises(ValidationError, match="non-empty string"):
+            validate_land_use_subtype(None)
+
+    def test_sql_injection_payload(self):
+        with pytest.raises(ValidationError, match="Unknown land use subtype"):
+            validate_land_use_subtype("'; DROP TABLE land_use; --")
+
+    def test_all_valid_subtypes(self):
+        """Every valid subtype should pass validation."""
+        valid = [
+            "residential", "commercial", "industrial", "institutional",
+            "agriculture", "aquaculture", "recreation", "park", "forest",
+            "cemetery", "religious", "military", "education", "medical",
+            "transportation", "airport", "port", "dam", "quarry",
+            "landfill", "brownfield", "greenfield",
+        ]
+        for st in valid:
+            assert validate_land_use_subtype(st) == st
+
+
+class TestValidateIncludeClosed:
+    """Tests for include_closed validation."""
+
+    def test_none_returns_false(self):
+        assert validate_include_closed(None) is False
+
+    def test_true(self):
+        assert validate_include_closed(True) is True
+
+    def test_false(self):
+        assert validate_include_closed(False) is False
+
+    def test_string_true(self):
+        assert validate_include_closed("true") is True
+
+    def test_string_false(self):
+        assert validate_include_closed("false") is False
+
+    def test_string_yes(self):
+        assert validate_include_closed("yes") is True
+
+    def test_string_1(self):
+        assert validate_include_closed("1") is True

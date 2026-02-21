@@ -63,7 +63,14 @@ class Database:
         self._initialized = True
         logger.info("DuckDB initialized with spatial + httpfs extensions")
 
-    def initialize_local(self, places_path: str = "", buildings_path: str = "", divisions_path: str = "") -> None:
+    def initialize_local(
+        self,
+        places_path: str = "",
+        buildings_path: str = "",
+        divisions_path: str = "",
+        transportation_path: str = "",
+        land_use_path: str = "",
+    ) -> None:
         """Initialize DuckDB with local parquet files instead of S3.
 
         Used for testing with fixture data. Creates views that match
@@ -73,6 +80,8 @@ class Database:
             places_path: Path to local places parquet file.
             buildings_path: Path to local buildings parquet file.
             divisions_path: Path to local divisions parquet file.
+            transportation_path: Path to local roads parquet file.
+            land_use_path: Path to local land use parquet file.
         """
         if self._initialized:
             return
@@ -92,6 +101,14 @@ class Database:
         if divisions_path:
             self._conn.execute(
                 f"CREATE VIEW divisions AS SELECT * FROM read_parquet('{divisions_path}')"
+            )
+        if transportation_path:
+            self._conn.execute(
+                f"CREATE VIEW roads AS SELECT * FROM read_parquet('{transportation_path}')"
+            )
+        if land_use_path:
+            self._conn.execute(
+                f"CREATE VIEW land_use AS SELECT * FROM read_parquet('{land_use_path}')"
             )
 
         self._initialized = True

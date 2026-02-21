@@ -15,21 +15,28 @@ Each operation is registered as its own MCP tool. The agent sees all operations 
 | Tool | Parameters | Description |
 |------|-----------|-------------|
 | `get_place_categories` | `query` | Search Overture's place category taxonomy |
-| `places_in_radius` | `lat, lng, radius_m, category, limit, include_geometry` | Find places matching a category within a radius |
-| `nearest_place_of_type` | `lat, lng, category, max_radius_m, include_geometry` | Find the single closest place of a given type |
+| `places_in_radius` | `lat, lng, radius_m, category, limit, include_geometry, include_closed` | Find places matching a category within a radius |
+| `nearest_place_of_type` | `lat, lng, category, max_radius_m, include_geometry, include_closed` | Find the single closest place of a given type |
 | `count_places_by_type_in_radius` | `lat, lng, radius_m, category` | Count places of a category in an area |
 | `building_count_in_radius` | `lat, lng, radius_m` | Count buildings in an area |
 | `building_class_composition` | `lat, lng, radius_m` | Get % breakdown of building types |
 | `point_in_admin_boundary` | `lat, lng` | Find what country/region/city contains a point |
+| `road_count_by_class` | `lat, lng, radius_m` | Count road segments by class in an area |
+| `nearest_road_of_class` | `lat, lng, road_class, max_radius_m, include_geometry` | Find the closest road of a given class |
+| `road_surface_composition` | `lat, lng, radius_m` | Get % breakdown of road surface types |
+| `land_use_at_point` | `lat, lng` | Find land use designation at a point |
+| `land_use_composition` | `lat, lng, radius_m` | Get % breakdown of land use types in an area |
+| `land_use_search` | `lat, lng, radius_m, subtype, limit, include_geometry` | Find land use parcels of a specific type |
 
 **Agent workflow:**
 ```
 Turn 1: places_in_radius({lat: 52.36, lng: 4.90, radius_m: 500, category: "coffee_shop"})
+Turn 1: land_use_composition({lat: 52.36, lng: 4.90, radius_m: 1000})
 ```
 
 One-step calls. No discovery needed. Compatible with CrewAI, LangChain, AutoGen, and other frameworks that read tool definitions at startup.
 
-**Trade-off:** Token overhead grows with operation count. At 7 operations this is ~2,000-3,000 tokens — acceptable. At 20+ operations it becomes significant if the server is used alongside many other MCPs.
+**Trade-off:** Token overhead grows with operation count. At 13 operations this is ~4,000-5,000 tokens — acceptable for most contexts. At 20+ operations it becomes significant if the server is used alongside many other MCPs.
 
 ---
 

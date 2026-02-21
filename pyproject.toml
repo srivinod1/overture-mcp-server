@@ -6,9 +6,12 @@ readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
 dependencies = [
-    "fastmcp>=0.1.0",
+    "fastmcp>=2.0,<4.0",
     "duckdb>=1.1.0",
 ]
+
+[project.scripts]
+overture-mcp-server = "overture_mcp.server:main"
 
 [project.optional-dependencies]
 dev = [
@@ -26,6 +29,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/overture_mcp"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/overture_mcp/data" = "overture_mcp/data"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

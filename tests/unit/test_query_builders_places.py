@@ -15,13 +15,23 @@ from overture_mcp.queries.places import (
 class TestPlacesInRadiusQuery:
     """Tests for places_in_radius_query SQL generation."""
 
-    def test_sql_has_select_columns(self):
+    def test_sql_has_core_select_columns(self):
         sql, _ = places_in_radius_query(52.37, 4.90, 500, "coffee_shop", "places")
         assert 'names."primary" AS name' in sql
         assert 'categories."primary" AS category' in sql
         assert "ST_Y(geometry) AS lat" in sql
         assert "ST_X(geometry) AS lng" in sql
         assert "distance_m" in sql
+
+    def test_sql_has_enhanced_select_columns(self):
+        """Enhanced fields: confidence, addresses, phones, websites, brand."""
+        sql, _ = places_in_radius_query(52.37, 4.90, 500, "coffee_shop", "places")
+        assert "confidence" in sql
+        assert "addresses" in sql
+        assert "phones" in sql
+        assert "websites" in sql
+        assert 'brand.names."primary" AS brand_name' in sql
+        assert "brand.wikidata AS brand_wikidata" in sql
 
     def test_coordinate_order_st_point(self):
         """ST_Point must receive (lng, lat) — X before Y."""
@@ -63,7 +73,7 @@ class TestPlacesInRadiusQuery:
 
     def test_include_geometry_true(self):
         sql, _ = places_in_radius_query(52.37, 4.90, 500, "coffee_shop", "places", include_geometry=True)
-        assert "ST_AsText(geometry) AS geometry" in sql
+        assert "ST_AsText(geometry) AS geometry_wkt" in sql
 
     def test_data_source_in_from(self):
         sql, _ = places_in_radius_query(52.37, 4.90, 500, "coffee_shop", "my_table")
@@ -74,6 +84,27 @@ class TestPlacesInRadiusQuery:
         _, params = places_in_radius_query(52.37, 4.90, 500, "coffee_shop", "places", limit=20)
         # lng, lat (select), lng_min, lng_max, lat_min, lat_max, lng, lat (where), radius, category, limit
         assert len(params) == 11
+
+    def test_excludes_permanently_closed_by_default(self):
+        """Default query should filter out permanently_closed places."""
+        sql, _ = places_in_radius_query(52.37, 4.90, 500, "coffee_shop", "places")
+        assert "permanently_closed" in sql
+        assert "COALESCE(operating_status" in sql
+
+    def test_include_closed_true_no_status_filter(self):
+        """include_closed=True should NOT filter by operating_status."""
+        sql, _ = places_in_radius_query(
+            52.37, 4.90, 500, "coffee_shop", "places", include_closed=True,
+        )
+        assert "permanently_closed" not in sql
+        assert "operating_status" not in sql
+
+    def test_include_closed_false_has_status_filter(self):
+        """include_closed=False should filter by operating_status."""
+        sql, _ = places_in_radius_query(
+            52.37, 4.90, 500, "coffee_shop", "places", include_closed=False,
+        )
+        assert "COALESCE(operating_status, 'open') != 'permanently_closed'" in sql
 
 
 class TestNearestPlaceQuery:
@@ -88,6 +119,22 @@ class TestNearestPlaceQuery:
     def test_uses_flip_coordinates(self):
         sql, _ = nearest_place_query(52.37, 4.90, "atm", "places")
         assert "ST_FlipCoordinates" in sql
+
+    def test_has_enhanced_columns(self):
+        """Nearest place query should include enhanced fields."""
+        sql, _ = nearest_place_query(52.37, 4.90, "atm", "places")
+        assert "confidence" in sql
+        assert "addresses" in sql
+        assert "brand_name" in sql
+
+    def test_passes_include_closed(self):
+        """include_closed=True should be forwarded to places_in_radius_query."""
+        sql, _ = nearest_place_query(52.37, 4.90, "atm", "places", include_closed=True)
+        assert "permanently_closed" not in sql
+
+    def test_excludes_closed_by_default(self):
+        sql, _ = nearest_place_query(52.37, 4.90, "atm", "places")
+        assert "permanently_closed" in sql
 
 
 class TestCountPlacesQuery:
@@ -118,3 +165,20 @@ class TestCountPlacesQuery:
         sql, params = count_places_query(52.37, 4.90, 500, "restaurant", "places")
         assert "restaurant" not in sql
         assert "restaurant" in params
+
+    def test_excludes_permanently_closed_by_default(self):
+        """Count query should exclude permanently_closed by default."""
+        sql, _ = count_places_query(52.37, 4.90, 500, "restaurant", "places")
+        assert "permanently_closed" in sql
+
+    def test_include_closed_removes_filter(self):
+        """Count query with include_closed=True should not filter status."""
+        sql, _ = count_places_query(52.37, 4.90, 500, "restaurant", "places", include_closed=True)
+        assert "permanently_closed" not in sql
+
+    def test_no_enhanced_columns_in_count(self):
+        """Count query should not select confidence, addresses, etc."""
+        sql, _ = count_places_query(52.37, 4.90, 500, "restaurant", "places")
+        assert "confidence" not in sql
+        assert "addresses" not in sql
+        assert "brand" not in sql
