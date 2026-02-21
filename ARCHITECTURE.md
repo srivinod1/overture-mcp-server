@@ -300,12 +300,6 @@ overture-mcp-server/
 ├── Dockerfile                   # Railway deployment
 ├── railway.toml                 # Railway config
 │
-├── docs/
-│   ├── TOOLS.md                 # MCP tool specs (3 tools)
-│   ├── OPERATIONS.md            # Operation catalog (all operations, full specs)
-│   ├── DATA_MODEL.md            # Overture schema reference
-│   └── DEPLOYMENT.md            # Railway deployment guide
-│
 ├── src/
 │   └── overture_mcp/
 │       ├── __init__.py
@@ -327,12 +321,23 @@ overture-mcp-server/
 │           ├── buildings.py     # SQL query builders for buildings theme
 │           └── divisions.py     # SQL query builders for divisions theme
 │
-└── tests/
-    ├── conftest.py              # Shared fixtures (DuckDB test connection)
-    ├── test_registry.py         # Registry lookup, schema validation
-    ├── test_places.py
-    ├── test_buildings.py
-    └── test_divisions.py
+├── tests/
+│   ├── conftest.py              # Global fixtures (DuckDB, servers, known coords)
+│   ├── fixtures/                # Deterministic parquet + category data
+│   ├── unit/                    # Pure input → output (no DuckDB, no S3)
+│   ├── integration/             # DuckDB + local parquet fixtures
+│   ├── e2e/                     # Multi-operation agent workflows
+│   ├── edge/                    # Boundary values, nulls, empty results
+│   ├── security/                # Injection, tampering, auth bypass
+│   ├── performance/             # Latency, concurrency, memory
+│   └── compatibility/           # Direct vs progressive mode parity
+│
+└── docs/
+    ├── TOOLS.md                 # MCP tool specs (both modes)
+    ├── OPERATIONS.md            # Operation catalog (all operations, full specs)
+    ├── DATA_MODEL.md            # Overture schema reference
+    ├── DEPLOYMENT.md            # Railway deployment guide
+    └── TESTING.md               # Comprehensive test strategy (~190 tests)
 ```
 
 **Separation of concerns:**
