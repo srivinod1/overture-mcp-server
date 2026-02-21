@@ -33,19 +33,33 @@ AI agents need geospatial intelligence. This server gives them direct access to 
 
 They're complementary — use them together for a complete geospatial agent.
 
-## Available Tools (V1)
+## MCP Tools (3 Tools)
+
+The server uses [progressive disclosure](https://www.anthropic.com/engineering/code-execution-with-mcp) to keep agent context lightweight. Instead of registering every operation as a separate tool, the server exposes 3 tools:
 
 | Tool | What It Does |
 |------|-------------|
-| `get_place_categories` | Search Overture's place category taxonomy |
-| `places_in_radius` | Find all places matching a category within a radius |
-| `nearest_place_of_type` | Find the single closest place of a given type |
-| `count_places_by_type_in_radius` | Count places of a category in an area |
-| `building_count_in_radius` | Count buildings in an area |
-| `building_class_composition` | Get % breakdown of building types (residential/commercial/industrial) |
-| `point_in_admin_boundary` | Find what country/region/city contains a point |
+| `list_operations` | Returns all available operation names and descriptions |
+| `get_operation_schema` | Returns the full parameter schema for a specific operation |
+| `execute_operation` | Runs an operation with given parameters |
 
-See [docs/TOOLS.md](docs/TOOLS.md) for detailed specifications.
+This means the server can support 20+ operations without increasing the agent's context overhead.
+
+## Available Operations (V1)
+
+Operations are called through `execute_operation`. Use `list_operations` to discover them and `get_operation_schema` to get their parameters.
+
+| Operation | Theme | What It Does |
+|-----------|-------|-------------|
+| `get_place_categories` | Places | Search Overture's place category taxonomy |
+| `places_in_radius` | Places | Find all places matching a category within a radius |
+| `nearest_place_of_type` | Places | Find the single closest place of a given type |
+| `count_places_by_type_in_radius` | Places | Count places of a category in an area |
+| `building_count_in_radius` | Buildings | Count buildings in an area |
+| `building_class_composition` | Buildings | Get % breakdown of building types |
+| `point_in_admin_boundary` | Divisions | Find what country/region/city contains a point |
+
+See [docs/OPERATIONS.md](docs/OPERATIONS.md) for full specifications.
 
 ## Quick Start
 
@@ -103,13 +117,19 @@ Add to your Claude Desktop MCP config (`claude_desktop_config.json`):
 ## Example Agent Interaction
 
 ```
-User: "Are there any good coffee options near the Rijksmuseum in Amsterdam?"
+User: "Compare coffee shop density near two potential retail locations in Amsterdam"
 
 Agent:
-  1. Calls Geocoding MCP → geocode("Rijksmuseum, Amsterdam") → (52.3600, 4.8852)
-  2. Calls Overture MCP → get_place_categories(query="coffee") → ["coffee_shop", "cafe", ...]
-  3. Calls Overture MCP → places_in_radius(lat=52.36, lng=4.8852, radius_m=500, category="coffee_shop")
-  4. Returns: "I found 8 coffee shops within 500m of the Rijksmuseum: ..."
+  1. Calls Geocoding MCP → geocode("Leidseplein, Amsterdam") → (52.3636, 4.8828)
+  2. Calls Geocoding MCP → geocode("De Pijp, Amsterdam") → (52.3509, 4.8936)
+  3. Calls Overture MCP → list_operations() → sees available operations
+  4. Calls Overture MCP → get_operation_schema("count_places_by_type_in_radius")
+  5. Calls Overture MCP → execute_operation("get_place_categories", {query: "coffee"})
+  6. Calls Overture MCP → execute_operation("count_places_by_type_in_radius",
+       {lat: 52.3636, lng: 4.8828, radius_m: 500, category: "coffee_shop"}) → 12
+  7. Calls Overture MCP → execute_operation("count_places_by_type_in_radius",
+       {lat: 52.3509, lng: 4.8936, radius_m: 500, category: "coffee_shop"}) → 7
+  8. Returns: "Leidseplein has 12 coffee shops within 500m vs 7 in De Pijp..."
 ```
 
 ## Architecture
@@ -119,6 +139,7 @@ Agent:
 - **Data**: Overture Maps GeoParquet on S3 (queried directly, no data copying)
 - **Auth**: API key via `X-API-Key` header
 - **Hosting**: Railway ($5-10/month)
+- **Pattern**: Progressive disclosure (3 MCP tools, N operations)
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for full technical details and design decisions.
 
@@ -134,7 +155,8 @@ This server queries [Overture Maps](https://overturemaps.org/) data directly fro
 ## Documentation
 
 - [ARCHITECTURE.md](ARCHITECTURE.md) — Technical architecture and all design decisions
-- [docs/TOOLS.md](docs/TOOLS.md) — Detailed tool specifications with examples
+- [docs/TOOLS.md](docs/TOOLS.md) — MCP tool specifications (3 tools)
+- [docs/OPERATIONS.md](docs/OPERATIONS.md) — Operation catalog with full specs
 - [docs/DATA_MODEL.md](docs/DATA_MODEL.md) — Overture schema reference
 - [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Railway deployment guide
 
@@ -144,7 +166,7 @@ Contributions welcome! Please read the architecture doc first to understand desi
 
 ```bash
 # Clone and set up dev environment
-git clone https://github.com/your-org/overture-mcp-server.git
+git clone https://github.com/srivinod1/overture-mcp-server.git
 cd overture-mcp-server
 pip install -e ".[dev]"
 
