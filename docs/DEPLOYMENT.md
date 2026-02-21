@@ -19,6 +19,7 @@ Set these in the Railway dashboard under your service's Variables tab:
 | Variable | Required | Value | Notes |
 |----------|----------|-------|-------|
 | `OVERTURE_API_KEY` | Yes | Your chosen API key | Shared with MCP clients |
+| `TOOL_MODE` | No | `direct` | `direct` (default) or `progressive` |
 | `OVERTURE_DATA_VERSION` | No | `2026-01-21.0` | Override to use different Overture release |
 | `MAX_CONCURRENT_QUERIES` | No | `3` | DuckDB query concurrency limit |
 | `MAX_RADIUS_M` | No | `50000` | Safety cap on radius queries |

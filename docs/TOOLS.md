@@ -1,21 +1,51 @@
 # MCP Tool Specifications
 
-The server exposes exactly **3 MCP tools**. These tools never change as operations are added or removed. They provide progressive disclosure: agents discover what's available, fetch schemas on demand, and execute operations — without loading all operation definitions into context upfront.
+The server supports two tool modes, controlled by the `TOOL_MODE` environment variable. Both modes expose the same operations with the same behavior — only the MCP surface differs.
 
-See [OPERATIONS.md](OPERATIONS.md) for the full catalog of operations available through `execute_operation`.
+See [OPERATIONS.md](OPERATIONS.md) for the full catalog of operations and their parameters.
 
 ---
 
-## Tool 1: `list_operations`
+## Direct Mode (`TOOL_MODE=direct`) — Default
+
+Each operation is registered as its own MCP tool. The agent sees all operations with full parameter schemas at startup.
+
+**Exposed tools (v1):**
+
+| Tool | Parameters | Description |
+|------|-----------|-------------|
+| `get_place_categories` | `query` | Search Overture's place category taxonomy |
+| `places_in_radius` | `lat, lng, radius_m, category, limit, include_geometry` | Find places matching a category within a radius |
+| `nearest_place_of_type` | `lat, lng, category, max_radius_m, include_geometry` | Find the single closest place of a given type |
+| `count_places_by_type_in_radius` | `lat, lng, radius_m, category` | Count places of a category in an area |
+| `building_count_in_radius` | `lat, lng, radius_m` | Count buildings in an area |
+| `building_class_composition` | `lat, lng, radius_m` | Get % breakdown of building types |
+| `point_in_admin_boundary` | `lat, lng` | Find what country/region/city contains a point |
+
+**Agent workflow:**
+```
+Turn 1: places_in_radius({lat: 52.36, lng: 4.90, radius_m: 500, category: "coffee_shop"})
+```
+
+One-step calls. No discovery needed. Compatible with CrewAI, LangChain, AutoGen, and other frameworks that read tool definitions at startup.
+
+**Trade-off:** Token overhead grows with operation count. At 7 operations this is ~2,000-3,000 tokens — acceptable. At 20+ operations it becomes significant if the server is used alongside many other MCPs.
+
+---
+
+## Progressive Mode (`TOOL_MODE=progressive`)
+
+Operations are exposed through 3 meta-tools. Agents discover and fetch schemas on demand, keeping context lightweight.
+
+**Exposed tools (always 3, regardless of operation count):**
+
+### `list_operations`
 
 Returns all available operation names with one-line descriptions, grouped by theme.
 
-### Parameters
+**Parameters:** None.
 
-None.
-
-### Response
-
+**Response:**
 ```json
 {
   "operations": [
@@ -30,53 +60,31 @@ None.
       "theme": "places"
     },
     {
-      "name": "nearest_place_of_type",
-      "description": "Find the single closest place of a given type to a point",
-      "theme": "places"
-    },
-    {
-      "name": "count_places_by_type_in_radius",
-      "description": "Count places of a category within a radius",
-      "theme": "places"
-    },
-    {
       "name": "building_count_in_radius",
       "description": "Count buildings within a radius of a point",
       "theme": "buildings"
-    },
-    {
-      "name": "building_class_composition",
-      "description": "Get percentage breakdown of building types in an area",
-      "theme": "buildings"
-    },
-    {
-      "name": "point_in_admin_boundary",
-      "description": "Find what country, region, and city contain a given point",
-      "theme": "divisions"
     }
   ]
 }
 ```
 
-### Notes
-- Returns the full list every time. With 7 operations this is ~500 tokens. Even at 30+ operations it stays under 2,000 tokens.
+**Notes:**
 - Agents typically call this once at the start of a conversation.
 - Latency: <10ms (reads from in-memory registry).
 
 ---
 
-## Tool 2: `get_operation_schema`
+### `get_operation_schema`
 
-Returns the full parameter schema and an example for a specific operation. Agents call this to learn how to use an operation before calling `execute_operation`.
+Returns the full parameter schema and an example for a specific operation.
 
-### Parameters
+**Parameters:**
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `operation` | string | Yes | Name of the operation (from `list_operations`) |
 
-### Response
-
+**Response:**
 ```json
 {
   "name": "places_in_radius",
@@ -123,40 +131,68 @@ Returns the full parameter schema and an example for a specific operation. Agent
 }
 ```
 
-### Error Response
-
+**Error:**
 ```json
 {
   "error": "Unknown operation: 'foo'. Use list_operations to see available operations."
 }
 ```
 
-### Notes
-- Agents only fetch schemas for operations they intend to use.
-- Once fetched, the agent reuses the schema knowledge for subsequent calls — no need to re-fetch.
-- Latency: <10ms (reads from in-memory registry).
-
 ---
 
-## Tool 3: `execute_operation`
+### `execute_operation`
 
 Runs an operation with the given parameters and returns results.
 
-### Parameters
+**Parameters:**
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `operation` | string | Yes | Name of the operation to execute |
 | `params` | object | Yes | Operation-specific parameters (see `get_operation_schema`) |
 
-### Response
-
-All operations return the standard response envelope:
+**Response:** Standard response envelope (see [OPERATIONS.md](OPERATIONS.md) for operation-specific responses).
 
 ```json
 {
   "results": [...],
   "count": 2,
+  "query_params": { ... },
+  "data_version": "2026-01-21.0",
+  "suggestion": null
+}
+```
+
+---
+
+### Progressive Mode Agent Workflow
+
+```
+Turn 1:
+  Agent → list_operations()
+  Agent → get_operation_schema("places_in_radius")
+  Agent → get_operation_schema("building_class_composition")
+
+Turn 2:
+  Agent → execute_operation("places_in_radius", {lat: 52.36, lng: 4.90, ...})
+  Agent → execute_operation("building_class_composition", {lat: 52.36, lng: 4.90, ...})
+
+Turn 3+:
+  Agent reuses schema knowledge for additional calls — no re-fetching needed.
+```
+
+**Trade-off:** Requires multi-step discovery before first use, but context overhead stays at ~300 tokens regardless of operation count.
+
+---
+
+## Response Envelope (Both Modes)
+
+All operations return the same response format regardless of tool mode:
+
+```json
+{
+  "results": [...],
+  "count": 3,
   "query_params": {
     "lat": 52.3676,
     "lng": 4.9041,
@@ -176,72 +212,12 @@ All operations return the standard response envelope:
 | `data_version` | string | Overture Maps release version used. |
 | `suggestion` | string or null | Hint when results are empty. Null when results exist. |
 
-### Error Responses
-
-**Unknown operation:**
-```json
-{
-  "error": "Unknown operation: 'foo'. Use list_operations to see available operations."
-}
-```
-
-**Invalid parameters:**
-```json
-{
-  "error": "radius_m must be between 1 and 50000. Received: 100000",
-  "query_params": {
-    "lat": 52.3676,
-    "lng": 4.9041,
-    "radius_m": 100000
-  }
-}
-```
-
-**Query timeout:**
-```json
-{
-  "error": "Query timeout after 30s. Try a smaller radius.",
-  "query_params": {
-    "lat": 52.3676,
-    "lng": 4.9041,
-    "radius_m": 50000,
-    "category": "restaurant"
-  }
-}
-```
-
-### Common Validation Errors
+## Error Responses (Both Modes)
 
 | Error | Cause |
 |-------|-------|
 | `"lat must be between -90 and 90"` | Invalid latitude |
 | `"lng must be between -180 and 180"` | Invalid longitude |
 | `"radius_m must be between 1 and 50000"` | Radius out of bounds |
-| `"Unknown category: {x}. Use get_place_categories operation to find valid categories."` | Invalid category ID |
+| `"Unknown category: {x}. Use get_place_categories to find valid categories."` | Invalid category ID |
 | `"Query timeout after 30s. Try a smaller radius."` | S3 query took too long |
-
----
-
-## Agent Workflow Example
-
-A site selection agent comparing two retail locations:
-
-```
-Turn 1:
-  Agent → list_operations()
-  Agent → get_operation_schema("places_in_radius")
-  Agent → get_operation_schema("building_class_composition")
-
-Turn 2:
-  Agent → execute_operation("places_in_radius", {lat: 52.36, lng: 4.90, radius_m: 1000, category: "restaurant"})
-  Agent → execute_operation("building_class_composition", {lat: 52.36, lng: 4.90, radius_m: 1000})
-
-Turn 3:
-  Agent → execute_operation("places_in_radius", {lat: 52.38, lng: 4.87, radius_m: 1000, category: "restaurant"})
-  Agent → execute_operation("building_class_composition", {lat: 52.38, lng: 4.87, radius_m: 1000})
-
-Turn 4:
-  Agent compares results and recommends location A or B.
-```
-
-The agent fetched schemas once (turn 1) and reused them for all subsequent calls (turns 2-3). No schema re-fetching, no wasted tokens.

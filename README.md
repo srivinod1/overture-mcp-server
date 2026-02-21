@@ -33,24 +33,10 @@ AI agents need geospatial intelligence. This server gives them direct access to 
 
 They're complementary — use them together for a complete geospatial agent.
 
-## MCP Tools (3 Tools)
+## Available Tools (V1)
 
-The server uses [progressive disclosure](https://www.anthropic.com/engineering/code-execution-with-mcp) to keep agent context lightweight. Instead of registering every operation as a separate tool, the server exposes 3 tools:
-
-| Tool | What It Does |
-|------|-------------|
-| `list_operations` | Returns all available operation names and descriptions |
-| `get_operation_schema` | Returns the full parameter schema for a specific operation |
-| `execute_operation` | Runs an operation with given parameters |
-
-This means the server can support 20+ operations without increasing the agent's context overhead.
-
-## Available Operations (V1)
-
-Operations are called through `execute_operation`. Use `list_operations` to discover them and `get_operation_schema` to get their parameters.
-
-| Operation | Theme | What It Does |
-|-----------|-------|-------------|
+| Tool | Theme | What It Does |
+|------|-------|-------------|
 | `get_place_categories` | Places | Search Overture's place category taxonomy |
 | `places_in_radius` | Places | Find all places matching a category within a radius |
 | `nearest_place_of_type` | Places | Find the single closest place of a given type |
@@ -59,7 +45,9 @@ Operations are called through `execute_operation`. Use `list_operations` to disc
 | `building_class_composition` | Buildings | Get % breakdown of building types |
 | `point_in_admin_boundary` | Divisions | Find what country/region/city contains a point |
 
-See [docs/OPERATIONS.md](docs/OPERATIONS.md) for full specifications.
+The server also supports a [progressive disclosure mode](https://www.anthropic.com/engineering/code-execution-with-mcp) (`TOOL_MODE=progressive`) that exposes 3 meta-tools instead of individual tools — useful when running alongside many other MCPs where context overhead matters. See [docs/TOOLS.md](docs/TOOLS.md) for details.
+
+See [docs/OPERATIONS.md](docs/OPERATIONS.md) for full parameter and response specifications.
 
 ## Quick Start
 
@@ -122,14 +110,12 @@ User: "Compare coffee shop density near two potential retail locations in Amster
 Agent:
   1. Calls Geocoding MCP → geocode("Leidseplein, Amsterdam") → (52.3636, 4.8828)
   2. Calls Geocoding MCP → geocode("De Pijp, Amsterdam") → (52.3509, 4.8936)
-  3. Calls Overture MCP → list_operations() → sees available operations
-  4. Calls Overture MCP → get_operation_schema("count_places_by_type_in_radius")
-  5. Calls Overture MCP → execute_operation("get_place_categories", {query: "coffee"})
-  6. Calls Overture MCP → execute_operation("count_places_by_type_in_radius",
+  3. Calls Overture MCP → get_place_categories({query: "coffee"})
+  4. Calls Overture MCP → count_places_by_type_in_radius(
        {lat: 52.3636, lng: 4.8828, radius_m: 500, category: "coffee_shop"}) → 12
-  7. Calls Overture MCP → execute_operation("count_places_by_type_in_radius",
+  5. Calls Overture MCP → count_places_by_type_in_radius(
        {lat: 52.3509, lng: 4.8936, radius_m: 500, category: "coffee_shop"}) → 7
-  8. Returns: "Leidseplein has 12 coffee shops within 500m vs 7 in De Pijp..."
+  6. Returns: "Leidseplein has 12 coffee shops within 500m vs 7 in De Pijp..."
 ```
 
 ## Architecture
@@ -139,7 +125,7 @@ Agent:
 - **Data**: Overture Maps GeoParquet on S3 (queried directly, no data copying)
 - **Auth**: API key via `X-API-Key` header
 - **Hosting**: Railway ($5-10/month)
-- **Pattern**: Progressive disclosure (3 MCP tools, N operations)
+- **Tool modes**: Direct (default, framework-compatible) or progressive (context-efficient)
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for full technical details and design decisions.
 

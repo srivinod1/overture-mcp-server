@@ -32,10 +32,10 @@ Agent (any MCP-compatible client)
 │   Overture Maps MCP Server               │
 │   (Python + FastMCP)                     │
 │                                          │
-│   ┌────────────────────────────────┐     │
-│   │  MCP Interface (3 tools)       │     │  list_operations
-│   │                                │     │  get_operation_schema
-│   │                                │     │  execute_operation
+│   ┌────────────────────────────────┐     │  TOOL_MODE=direct:
+│   │  MCP Interface                 │     │    each operation = 1 MCP tool
+│   │  (configurable tool mode)      │     │  TOOL_MODE=progressive:
+│   │                                │     │    3 meta-tools (list/schema/execute)
 │   └──────────────┬─────────────────┘     │
 │                  │                       │
 │   ┌──────────────▼─────────────────┐     │
@@ -68,31 +68,41 @@ Agent (any MCP-compatible client)
 
 ## 3. Key Decisions
 
-### 3.1 Progressive Disclosure (3 MCP Tools, Not 7+)
+### 3.1 Dual-Mode Tool Interface
 
-Instead of registering every operation as a separate MCP tool, the server exposes exactly **3 MCP tools**:
+The server supports two modes for exposing operations, controlled by the `TOOL_MODE` environment variable:
 
-1. **`list_operations`** — Returns all available operation names + one-line descriptions. No parameters. Agent calls this once per conversation to see what's available.
+**Direct mode (`TOOL_MODE=direct`)** — **Default**
 
-2. **`get_operation_schema`** — Takes an operation name, returns full parameter schema and an example. Agent calls this only for the operations it needs.
-
-3. **`execute_operation`** — Takes an operation name + parameters, runs it, returns results.
-
-**Why this matters:**
-- Every MCP tool definition is injected into the agent's context on every turn. With 20+ operations registered as individual tools, that's thousands of tokens consumed before the agent starts reasoning.
-- With 3 tools, the context overhead is ~300 tokens regardless of how many operations exist.
-- Adding new operations never changes the MCP interface. No client updates, no context bloat.
-- This follows the [code execution MCP pattern](https://www.anthropic.com/engineering/code-execution-with-mcp) recommended by Anthropic.
-
-**Agent workflow:**
+Each operation is registered as its own MCP tool. The agent sees all operations with full schemas at once:
 ```
-Turn 1: list_operations()          → sees all operation names + descriptions
+Agent sees: places_in_radius, building_count_in_radius, point_in_admin_boundary, ...
+Agent calls: places_in_radius({lat, lng, radius_m, category})
+```
+
+- One-step tool calls — the agent sees what's available and calls it directly.
+- Compatible with all agent frameworks (CrewAI, LangChain, AutoGen, etc.).
+- Trade-off: token overhead grows linearly with operation count.
+
+**Progressive mode (`TOOL_MODE=progressive`)**
+
+Operations are exposed through 3 meta-tools: `list_operations`, `get_operation_schema`, `execute_operation`. The agent discovers and fetches schemas on demand:
+```
+Turn 1: list_operations() → sees operation names + descriptions
 Turn 1: get_operation_schema("places_in_radius") → gets full param schema
 Turn 2: execute_operation("places_in_radius", {lat, lng, radius_m, category})
-Turn 3: execute_operation("places_in_radius", {different lat, lng, ...})  ← reuses schema knowledge
 ```
 
-The schema fetch happens once per conversation. After that, the agent calls `execute_operation` repeatedly without re-fetching.
+- Context overhead stays at ~300 tokens regardless of operation count.
+- Follows the [code execution MCP pattern](https://www.anthropic.com/engineering/code-execution-with-mcp) recommended by Anthropic.
+- Trade-off: requires multi-step discovery before first use.
+
+**Why default to direct mode:**
+- Most agent frameworks (CrewAI, LangChain, etc.) expect direct tool definitions at startup.
+- At 7 operations (v1), the token overhead of direct mode is small (~2,000-3,000 tokens).
+- Progressive mode becomes valuable when the operation count grows to 15+ and the server is used alongside many other MCPs.
+
+Both modes use the same operation registry internally. Switching is a single env var change with no code or behavior differences.
 
 ### 3.2 Operation Registry (Internal Architecture)
 
@@ -112,11 +122,11 @@ All operations are defined in a central registry — a dictionary of operation d
 }
 ```
 
-The 3 MCP tools read from this registry. Adding a new operation means:
+Both tool modes read from this registry. Adding a new operation means:
 1. Write the query logic
 2. Add an entry to the registry
 
-No changes to `server.py`, no new MCP tool registrations, no interface changes.
+In direct mode, the new operation automatically appears as a new MCP tool. In progressive mode, it appears in `list_operations` results. No changes to `server.py` in either case.
 
 ### 3.3 No Geocoding, No Routing
 Other MCPs already handle geocoding, routing, and directions well via their APIs. We focus exclusively on spatial analytics that require direct data access — things those API wrappers cannot do.
@@ -169,36 +179,21 @@ Current: `2026-01-21.0`. Overture releases quarterly. The data version is config
 
 ---
 
-## 4. MCP Interface (3 Tools)
+## 4. MCP Interface
 
-These are the only 3 tools registered with FastMCP. They never change as operations are added.
+### Direct Mode (Default)
 
-### Tool 1: `list_operations`
+Each operation in the registry is registered as its own MCP tool with full parameter schemas. With 7 v1 operations, the agent sees 7 tools.
 
-| | |
-|---|---|
-| **Parameters** | None |
-| **Returns** | Array of `{name, description, theme}` for all available operations |
-| **Token cost** | ~500 tokens for 7 operations, scales linearly |
-| **Latency** | <10ms (reads from in-memory registry) |
+### Progressive Mode
 
-### Tool 2: `get_operation_schema`
+3 MCP tools are registered. They never change as operations are added.
 
-| | |
-|---|---|
-| **Parameters** | `operation` (string, required) — name of the operation |
-| **Returns** | Full JSON schema for the operation's parameters, plus an example call |
-| **Token cost** | ~200-400 tokens per operation schema |
-| **Latency** | <10ms (reads from in-memory registry) |
-
-### Tool 3: `execute_operation`
-
-| | |
-|---|---|
-| **Parameters** | `operation` (string, required), `params` (object, required) |
-| **Returns** | Standard response envelope with operation results |
-| **Token cost** | Varies by operation |
-| **Latency** | 1-5s (S3 query) |
+| Tool | Parameters | Returns | Latency |
+|------|-----------|---------|---------|
+| `list_operations` | None | Array of `{name, description, theme}` | <10ms |
+| `get_operation_schema` | `operation` (string) | Full JSON schema + example | <10ms |
+| `execute_operation` | `operation` (string), `params` (object) | Standard response envelope | 1-5s |
 
 ---
 
@@ -318,7 +313,7 @@ overture-mcp-server/
 ```
 
 **Separation of concerns:**
-- `server.py` — Only 3 MCP tool definitions. Thin layer that delegates to the registry.
+- `server.py` — MCP tool registration (direct or progressive mode). Thin layer that delegates to the registry.
 - `registry.py` — Central catalog of all operations. Maps names → schemas + handlers.
 - `operations/` — Operation handlers (parameter validation, response shaping).
 - `queries/` — Pure SQL query builders. No MCP or registry knowledge. Testable independently.
@@ -370,6 +365,7 @@ WHERE bbox.xmin BETWEEN {lng - delta} AND {lng + delta}
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `OVERTURE_API_KEY` | Yes | API key for client authentication |
+| `TOOL_MODE` | No | `direct` (default) or `progressive` — how operations are exposed as MCP tools |
 | `OVERTURE_DATA_VERSION` | No | Override data version (default: `2026-01-21.0`) |
 | `MAX_CONCURRENT_QUERIES` | No | Semaphore limit (default: `3`) |
 | `MAX_RADIUS_M` | No | Safety cap on radius queries (default: `50000` / 50km) |
