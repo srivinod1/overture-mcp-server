@@ -8,12 +8,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies first (cached layer)
-COPY pyproject.toml .
-RUN pip install --no-cache-dir .
-
-# Copy application code
+# Copy project files needed for pip install (hatchling needs README + src/)
+COPY pyproject.toml README.md ./
 COPY src/ src/
+
+# Install Python dependencies
+RUN pip install --no-cache-dir .
 
 # Default environment: SSE transport, port 8000
 ENV TRANSPORT=sse
