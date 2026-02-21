@@ -4,7 +4,7 @@ An open-source MCP server that exposes [Overture Maps](https://overturemaps.org/
 
 ## What This Does
 
-AI agents need geospatial intelligence. This server gives them direct access to Overture Maps data — the world's most comprehensive open map dataset — through clean, composable tool primitives.
+AI agents need geospatial intelligence. This server gives them direct access to Overture Maps data through clean, composable tool primitives.
 
 **Ask questions like:**
 - "How many coffee shops are within 500m of this location?"
@@ -18,20 +18,20 @@ AI agents need geospatial intelligence. This server gives them direct access to 
 ┌─────────────────────────────────────────────────┐
 │  AI Agent (Claude, etc.)                        │
 ├─────────────────┬───────────────────────────────┤
-│  TomTom MCP     │  Overture Maps MCP            │
-│  ─────────────  │  ──────────────────           │
-│  Geocoding      │  Place analytics              │
-│  Routing        │  Building composition         │
-│  Directions     │  Admin boundary lookups        │
-│  ETA            │  Density analysis             │
-│  Traffic        │  Category discovery           │
+│  Geocoding /    │  Overture Maps MCP            │
+│  Routing MCP    │  ──────────────────           │
+│  ─────────────  │  Place analytics              │
+│  Geocoding      │  Building composition         │
+│  Routing        │  Admin boundary lookups       │
+│  Directions     │  Density analysis             │
+│  ETA            │  Category discovery           │
 └─────────────────┴───────────────────────────────┘
 ```
 
 **Overture MCP** handles spatial analytics that need direct data access.
-**TomTom/Mapbox MCP** handles geocoding, routing, and directions via APIs.
+**Geocoding/Routing MCPs** handle geocoding, routing, and directions via APIs.
 
-They're complementary — use both together for a complete geospatial agent.
+They're complementary — use them together for a complete geospatial agent.
 
 ## Available Tools (V1)
 
@@ -106,7 +106,7 @@ Add to your Claude Desktop MCP config (`claude_desktop_config.json`):
 User: "Are there any good coffee options near the Rijksmuseum in Amsterdam?"
 
 Agent:
-  1. Calls TomTom MCP → geocode("Rijksmuseum, Amsterdam") → (52.3600, 4.8852)
+  1. Calls Geocoding MCP → geocode("Rijksmuseum, Amsterdam") → (52.3600, 4.8852)
   2. Calls Overture MCP → get_place_categories(query="coffee") → ["coffee_shop", "cafe", ...]
   3. Calls Overture MCP → places_in_radius(lat=52.36, lng=4.8852, radius_m=500, category="coffee_shop")
   4. Returns: "I found 8 coffee shops within 500m of the Rijksmuseum: ..."

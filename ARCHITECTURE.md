@@ -2,7 +2,7 @@
 
 ## 1. Project Vision
 
-An open-source MCP server that exposes Overture Maps data as reusable spatial analytics tools for AI agents. This is the **data layer** — raw geospatial intelligence that API-wrapper MCPs (TomTom, Mapbox, Google) cannot provide.
+An open-source MCP server that exposes Overture Maps data as reusable spatial analytics tools for AI agents. This is the **data layer** — raw geospatial intelligence that API-wrapper MCPs cannot provide.
 
 ### What This Server Does
 - Spatial analytics: density analysis, building composition, admin boundary lookups
@@ -10,15 +10,15 @@ An open-source MCP server that exposes Overture Maps data as reusable spatial an
 - Composable primitives that agents combine to answer complex location questions
 
 ### What This Server Does NOT Do
-- Geocoding (use TomTom/Mapbox MCP)
-- Routing/directions (use TomTom/Mapbox MCP)
-- ETA calculations (use TomTom/Mapbox MCP)
+- Geocoding (use a geocoding MCP)
+- Routing/directions (use a routing MCP)
+- ETA calculations (use a routing MCP)
 - Map rendering or tile serving
 - Real-time location tracking
 
 ### Design Principle
 > When you want to know "what's here?" or "how does this area compare?" — that's Overture MCP.
-> When you want to know "how do I get there?" or "what's the address for these coordinates?" — that's TomTom/Mapbox MCP.
+> When you want to know "how do I get there?" or "what's the address for these coordinates?" — use a geocoding/routing MCP.
 
 ---
 
@@ -62,7 +62,7 @@ Claude Agent (or any MCP-compatible agent)
 ## 3. Key Decisions
 
 ### 3.1 No Geocoding, No Routing
-Other MCPs (TomTom, Mapbox) already handle geocoding, routing, and directions well via their APIs. We focus exclusively on spatial analytics that require direct data access — things those API wrappers cannot do.
+Other MCPs already handle geocoding, routing, and directions well via their APIs. We focus exclusively on spatial analytics that require direct data access — things those API wrappers cannot do.
 
 ### 3.2 Coordinates Only — No Address Inputs
 All tools accept `(lat, lng)` as input. The agent is responsible for geocoding addresses via another MCP before calling Overture tools. This keeps our tools pure, fast, and dependency-free.
