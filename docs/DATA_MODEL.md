@@ -97,16 +97,23 @@ The `categories.primary` field contains the leaf-level category ID (e.g., `coffe
 ```sql
 -- Note: ST_Point takes (lng, lat), not (lat, lng)
 -- Note: Uses ST_Distance_Spheroid for meter-accurate filtering, not ST_DWithin
+-- Note: ST_FlipCoordinates swaps (lng,lat) → (lat,lng) for ST_Distance_Spheroid
 SELECT
     names.primary AS name,
     categories.primary AS category,
     ST_Y(geometry) AS lat,
     ST_X(geometry) AS lng,
-    CAST(ST_Distance_Spheroid(geometry, ST_Point(4.9041, 52.3676)) AS INTEGER) AS distance_m
+    CAST(ST_Distance_Spheroid(
+        ST_FlipCoordinates(geometry),
+        ST_FlipCoordinates(ST_Point(4.9041, 52.3676))
+    ) AS INTEGER) AS distance_m
 FROM read_parquet('s3://overturemaps-us-west-2/release/2026-01-21.0/theme=places/type=place/*')
 WHERE bbox.xmin BETWEEN 4.895 AND 4.913              -- bbox pre-filter (degrees)
   AND bbox.ymin BETWEEN 52.363 AND 52.372
-  AND ST_Distance_Spheroid(geometry, ST_Point(4.9041, 52.3676)) < 500  -- exact filter (meters)
+  AND ST_Distance_Spheroid(
+        ST_FlipCoordinates(geometry),
+        ST_FlipCoordinates(ST_Point(4.9041, 52.3676))
+      ) < 500                                         -- exact filter (meters)
   AND categories.primary = 'coffee_shop'
 ORDER BY distance_m ASC
 LIMIT 20;
@@ -159,7 +166,10 @@ SELECT
 FROM read_parquet('s3://overturemaps-us-west-2/release/2026-01-21.0/theme=buildings/type=building/*')
 WHERE bbox.xmin BETWEEN 4.890 AND 4.918                                -- bbox pre-filter
   AND bbox.ymin BETWEEN 52.358 AND 52.377
-  AND ST_Distance_Spheroid(geometry, ST_Point(4.9041, 52.3676)) < 1000 -- exact filter (meters)
+  AND ST_Distance_Spheroid(
+        ST_FlipCoordinates(geometry),
+        ST_FlipCoordinates(ST_Point(4.9041, 52.3676))
+      ) < 1000                                                         -- exact filter (meters)
 GROUP BY COALESCE(class, 'unknown')
 ORDER BY count DESC;
 ```

@@ -15,6 +15,7 @@ This document defines every operation available through `execute_operation`. Eac
 - All user-provided string values use parameterized queries (`?` placeholders). No string interpolation in SQL.
 - Category values are validated against the cached taxonomy before reaching SQL.
 - Spatial filtering uses bbox pre-filter (degrees) + `ST_Distance_Spheroid` (meters) — not `ST_DWithin`.
+- **DuckDB coordinate order quirk**: `ST_Distance_Spheroid` expects (lat, lng) internally, but Overture stores (lng, lat). All geometry arguments to `ST_Distance_Spheroid` are wrapped in `ST_FlipCoordinates()` to correct coordinate order. Without this, distance calculations return incorrect values. This does NOT apply to `ST_Contains`, which operates in coordinate space.
 - When `include_geometry=true`, WKT strings are capped at 10,000 characters.
 
 ---
@@ -119,11 +120,17 @@ SELECT
     categories.primary AS category,
     ST_Y(geometry) AS lat,
     ST_X(geometry) AS lng,
-    CAST(ST_Distance_Spheroid(geometry, ST_Point(?, ?)) AS INTEGER) AS distance_m
+    CAST(ST_Distance_Spheroid(
+        ST_FlipCoordinates(geometry),
+        ST_FlipCoordinates(ST_Point(?, ?))
+    ) AS INTEGER) AS distance_m
 FROM read_parquet('s3://overturemaps-us-west-2/release/{version}/theme=places/type=place/*')
 WHERE bbox.xmin BETWEEN ? AND ?
   AND bbox.ymin BETWEEN ? AND ?
-  AND ST_Distance_Spheroid(geometry, ST_Point(?, ?)) < ?
+  AND ST_Distance_Spheroid(
+        ST_FlipCoordinates(geometry),
+        ST_FlipCoordinates(ST_Point(?, ?))
+      ) < ?
   AND categories.primary = ?
 ORDER BY distance_m ASC
 LIMIT ?
@@ -224,7 +231,10 @@ SELECT COUNT(*) AS count
 FROM read_parquet('s3://overturemaps-us-west-2/release/{version}/theme=places/type=place/*')
 WHERE bbox.xmin BETWEEN ? AND ?
   AND bbox.ymin BETWEEN ? AND ?
-  AND ST_Distance_Spheroid(geometry, ST_Point(?, ?)) < ?
+  AND ST_Distance_Spheroid(
+        ST_FlipCoordinates(geometry),
+        ST_FlipCoordinates(ST_Point(?, ?))
+      ) < ?
   AND categories.primary = ?
 -- params: [lng_min, lng_max, lat_min, lat_max, lng, lat, radius_m, category]
 ```
@@ -275,7 +285,10 @@ SELECT COUNT(*) AS count
 FROM read_parquet('s3://overturemaps-us-west-2/release/{version}/theme=buildings/type=building/*')
 WHERE bbox.xmin BETWEEN ? AND ?
   AND bbox.ymin BETWEEN ? AND ?
-  AND ST_Distance_Spheroid(geometry, ST_Point(?, ?)) < ?
+  AND ST_Distance_Spheroid(
+        ST_FlipCoordinates(geometry),
+        ST_FlipCoordinates(ST_Point(?, ?))
+      ) < ?
 -- params: [lng_min, lng_max, lat_min, lat_max, lng, lat, radius_m]
 ```
 
@@ -336,7 +349,10 @@ SELECT
 FROM read_parquet('s3://overturemaps-us-west-2/release/{version}/theme=buildings/type=building/*')
 WHERE bbox.xmin BETWEEN ? AND ?
   AND bbox.ymin BETWEEN ? AND ?
-  AND ST_Distance_Spheroid(geometry, ST_Point(?, ?)) < ?
+  AND ST_Distance_Spheroid(
+        ST_FlipCoordinates(geometry),
+        ST_FlipCoordinates(ST_Point(?, ?))
+      ) < ?
 GROUP BY COALESCE(class, 'unknown')
 ORDER BY count DESC
 -- params: [lng_min, lng_max, lat_min, lat_max, lng, lat, radius_m]

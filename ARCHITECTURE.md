@@ -175,7 +175,9 @@ Numeric values (`lat`, `lng`, `radius_m`, `limit`) are type-validated (must be i
 Radius-based queries use a two-stage spatial filter:
 
 1. **Bounding box pre-filter** (fast, approximate): Convert the radius from meters to approximate degree deltas and filter using Parquet bbox metadata. DuckDB skips irrelevant row groups entirely.
-2. **Spheroid distance filter** (accurate): `ST_Distance_Spheroid(geometry, point) < radius_m` for exact meter-based filtering.
+2. **Spheroid distance filter** (accurate): `ST_Distance_Spheroid(ST_FlipCoordinates(geometry), ST_FlipCoordinates(point)) < radius_m` for exact meter-based filtering.
+
+**Coordinate order quirk**: DuckDB's `ST_Distance_Spheroid` expects coordinates in (lat, lng) order internally, but Overture geometries (and standard GIS convention) store coordinates as (lng, lat). All geometry arguments passed to `ST_Distance_Spheroid` must be wrapped in `ST_FlipCoordinates()` to swap (lng, lat) to (lat, lng). Without this, distance calculations return incorrect values.
 
 This ensures the `distance_m` returned in results is consistent with the filter boundary — a place reported as 495m away will never appear when querying with a 500m radius and vice versa. `ST_DWithin` is NOT used because it operates in the geometry's coordinate units (degrees for lon/lat), not meters.
 
@@ -378,7 +380,10 @@ SELECT *
 FROM read_parquet('s3://overturemaps-us-west-2/release/2026-01-21.0/theme=places/type=place/*')
 WHERE bbox.xmin BETWEEN ? AND ?          -- Stage 1: bbox pre-filter
   AND bbox.ymin BETWEEN ? AND ?
-  AND ST_Distance_Spheroid(geometry, ST_Point(?, ?)) < ?   -- Stage 2: exact meters
+  AND ST_Distance_Spheroid(                                -- Stage 2: exact meters
+        ST_FlipCoordinates(geometry),                      -- flip (lng,lat) → (lat,lng)
+        ST_FlipCoordinates(ST_Point(?, ?))                 -- flip (lng,lat) → (lat,lng)
+      ) < ?
   AND categories.primary = ?             -- parameterized, not interpolated
 ```
 
