@@ -99,8 +99,8 @@ class ServerConfig:
             Full S3 path with glob pattern for reading all parquet files.
         """
         return (
-            f"s3://{S3_BUCKET}/release/{self.data_version}"
-            f"/theme={theme}/type={type_name}/*"
+            f"read_parquet('s3://{S3_BUCKET}/release/{self.data_version}"
+            f"/theme={theme}/type={type_name}/*', hive_partitioning=1)"
         )
 
     @property

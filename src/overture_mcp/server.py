@@ -494,6 +494,10 @@ def create_mcp_app(
     if db is None:
         db = Database(config)
         db.initialize()
+        # Load STAC index for targeted S3 file resolution.
+        # This replaces a full glob scan with targeted reads of 1-2 files,
+        # dropping cold-start latency from ~50s to ~5s for large themes.
+        db.load_stac_index()
     if categories is None:
         categories = load_categories()
 

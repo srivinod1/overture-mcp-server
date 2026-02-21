@@ -524,7 +524,6 @@ ST_Contains(geometry, ST_Point(?, ?))          -- lng, lat order (no flip needed
 
 ### Target: Railway
 - Runtime: Python 3.10+
-- Estimated cost: $5-10/month
 - No persistent storage needed (DuckDB is in-process, queries S3 directly)
 
 ### Container

@@ -143,7 +143,7 @@ Agent:
 - **Data**: Overture Maps GeoParquet on S3 (queried directly, no data copying)
 - **Auth**: Bearer token via `Authorization` header (HTTP/SSE transports)
 - **Transports**: stdio (local, default), SSE (hosted), Streamable HTTP (hosted)
-- **Hosting**: Railway, Docker, or any container platform ($5-10/month)
+- **Hosting**: Railway, Docker, or any container platform
 - **Tool modes**: Direct (default, 13 tools) or progressive (3 meta-tools)
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for full technical details and design decisions.

@@ -130,12 +130,12 @@ class TestRoadSurfaceCompositionQuery:
 
     def test_selects_surface_and_count(self):
         sql, _ = road_surface_composition_query(52.37, 4.90, 500, "roads")
-        assert "COALESCE(road_surface, 'unknown') AS surface_type" in sql
+        assert "COALESCE(road_surface[1].value, 'unknown') AS surface_type" in sql
         assert "COUNT(*) AS count" in sql
 
     def test_groups_by_surface(self):
         sql, _ = road_surface_composition_query(52.37, 4.90, 500, "roads")
-        assert "GROUP BY COALESCE(road_surface, 'unknown')" in sql
+        assert "GROUP BY COALESCE(road_surface[1].value, 'unknown')" in sql
 
     def test_orders_by_count_desc(self):
         sql, _ = road_surface_composition_query(52.37, 4.90, 500, "roads")

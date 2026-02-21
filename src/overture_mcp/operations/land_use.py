@@ -41,9 +41,12 @@ class LandUseOperations:
 
         query_params = {"lat": lat, "lng": lng}
 
+        data_source = self._db.resolve_source_point(
+            "land_use", lat, lng, self._config.land_use_path,
+        )
         sql, sql_params = land_use_at_point_query(
             lat=lat, lng=lng,
-            data_source=self._config.land_use_path,
+            data_source=data_source,
         )
 
         rows = await self._db.execute_query(sql, sql_params)
@@ -80,9 +83,12 @@ class LandUseOperations:
 
         query_params = {"lat": lat, "lng": lng, "radius_m": radius_m}
 
+        data_source = self._db.resolve_source(
+            "land_use", lat, lng, radius_m, self._config.land_use_path,
+        )
         sql, sql_params = land_use_composition_query(
             lat=lat, lng=lng, radius_m=radius_m,
-            data_source=self._config.land_use_path,
+            data_source=data_source,
         )
 
         rows = await self._db.execute_query(sql, sql_params)
@@ -134,10 +140,13 @@ class LandUseOperations:
             "radius_m": radius_m, "subtype": subtype,
         }
 
+        data_source = self._db.resolve_source(
+            "land_use", lat, lng, radius_m, self._config.land_use_path,
+        )
         sql, sql_params = land_use_search_query(
             lat=lat, lng=lng, radius_m=radius_m,
             subtype=subtype,
-            data_source=self._config.land_use_path,
+            data_source=data_source,
             limit=limit,
             include_geometry=include_geometry,
         )

@@ -15,6 +15,58 @@ BUILDINGS_PARQUET = str(FIXTURES_DIR / "sample_buildings.parquet")
 DIVISIONS_PARQUET = str(FIXTURES_DIR / "sample_divisions.parquet")
 
 
+class TestDatabaseWarmup:
+    """Test parquet metadata warmup."""
+
+    def test_warmup_requires_init(self):
+        """warmup() before initialize() should raise."""
+        config = ServerConfig(api_key="test")
+        db = Database(config)
+        with pytest.raises(RuntimeError, match="Call initialize"):
+            db.warmup(config)
+
+    def test_warmup_with_local_views(self):
+        """warmup() should succeed with local fixture views."""
+        config = ServerConfig(
+            api_key="test",
+            _places_source="places",
+            _buildings_source="buildings",
+            _divisions_source="divisions",
+            _transportation_source="roads",
+            _land_use_source="land_use",
+        )
+        db = Database(config)
+        db.initialize_local(
+            places_path=PLACES_PARQUET,
+            buildings_path=BUILDINGS_PARQUET,
+            divisions_path=DIVISIONS_PARQUET,
+            transportation_path=str(FIXTURES_DIR / "sample_roads.parquet"),
+            land_use_path=str(FIXTURES_DIR / "sample_land_use.parquet"),
+        )
+        # Should complete without error
+        db.warmup(config)
+
+    def test_warmup_handles_missing_theme(self):
+        """warmup() should log warning but not crash on missing data."""
+        config = ServerConfig(
+            api_key="test",
+            _places_source="places",
+            _buildings_source="nonexistent_table",
+            _divisions_source="divisions",
+            _transportation_source="roads",
+            _land_use_source="land_use",
+        )
+        db = Database(config)
+        db.initialize_local(
+            places_path=PLACES_PARQUET,
+            divisions_path=DIVISIONS_PARQUET,
+            transportation_path=str(FIXTURES_DIR / "sample_roads.parquet"),
+            land_use_path=str(FIXTURES_DIR / "sample_land_use.parquet"),
+        )
+        # Should not raise — failed themes are logged as warnings
+        db.warmup(config)
+
+
 class TestDatabaseLifecycle:
     """Test database initialization and lifecycle."""
 

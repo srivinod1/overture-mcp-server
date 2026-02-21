@@ -34,9 +34,12 @@ class BuildingsOperations:
 
         query_params = {"lat": lat, "lng": lng, "radius_m": radius_m}
 
+        data_source = self._db.resolve_source(
+            "building", lat, lng, radius_m, self._config.buildings_path,
+        )
         sql, sql_params = building_count_query(
             lat=lat, lng=lng, radius_m=radius_m,
-            data_source=self._config.buildings_path,
+            data_source=data_source,
         )
 
         rows = await self._db.execute_query(sql, sql_params)
@@ -67,9 +70,12 @@ class BuildingsOperations:
 
         query_params = {"lat": lat, "lng": lng, "radius_m": radius_m}
 
+        data_source = self._db.resolve_source(
+            "building", lat, lng, radius_m, self._config.buildings_path,
+        )
         sql, sql_params = building_composition_query(
             lat=lat, lng=lng, radius_m=radius_m,
-            data_source=self._config.buildings_path,
+            data_source=data_source,
         )
 
         rows = await self._db.execute_query(sql, sql_params)

@@ -6,7 +6,7 @@ This guide covers deploying the Overture Maps MCP Server to Railway.
 
 ## Prerequisites
 
-- [Railway account](https://railway.app/) (Hobby plan: $5/month)
+- [Railway account](https://railway.app/)
 - [Railway CLI](https://docs.railway.app/develop/cli) installed
 - GitHub repository connected to Railway
 
@@ -105,11 +105,9 @@ curl https://your-app.up.railway.app/health
 - **RAM**: 1 GB (allows 3 concurrent queries without memory pressure)
 - **CPU**: 1 vCPU (queries are I/O-bound on S3, not CPU-bound)
 
-### Cost Estimate
-- Railway Hobby plan: $5/month base
-- Usage-based: ~$2-5/month depending on query volume
-- S3 reads: ~$0 (Overture is public, egress from us-west-2 is minimal)
-- **Total: ~$7-10/month**
+### Cost
+- See [Railway pricing](https://railway.app/pricing) for current rates
+- S3 reads: ~$0 (Overture data is publicly accessible)
 
 ---
 

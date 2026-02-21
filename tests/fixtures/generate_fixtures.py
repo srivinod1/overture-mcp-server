@@ -1000,6 +1000,7 @@ def write_divisions_parquet(divisions: list[dict], output_path: str):
             id VARCHAR,
             names STRUCT("primary" VARCHAR),
             subtype VARCHAR,
+            class VARCHAR,
             admin_level INTEGER,
             geometry GEOMETRY,
             bbox STRUCT(xmin DOUBLE, xmax DOUBLE, ymin DOUBLE, ymax DOUBLE),
@@ -1015,6 +1016,7 @@ def write_divisions_parquet(divisions: list[dict], output_path: str):
                 ? AS id,
                 ROW(?) AS names,
                 ? AS subtype,
+                ? AS class,
                 ? AS admin_level,
                 geom AS geometry,
                 ROW(ST_XMin(geom), ST_XMax(geom), ST_YMin(geom), ST_YMax(geom)) AS bbox,
@@ -1024,6 +1026,7 @@ def write_divisions_parquet(divisions: list[dict], output_path: str):
             d["id"],
             d["name"],
             d["subtype"],
+            d.get("class", "land"),
             d["admin_level"],
             d["parent_division_id"],
             d["geometry_wkt"],
@@ -1036,7 +1039,12 @@ def write_divisions_parquet(divisions: list[dict], output_path: str):
 
 
 def write_roads_parquet(roads: list[dict], output_path: str):
-    """Write road segments to a parquet file matching Overture transportation schema."""
+    """Write road segments to a parquet file matching Overture transportation schema.
+
+    Uses the real Overture schema:
+    - road_surface: STRUCT("value" VARCHAR, "between" DOUBLE[])[]
+    - road_flags: STRUCT("values" VARCHAR[], "between" DOUBLE[])[]
+    """
     conn = duckdb.connect()
     conn.execute("INSTALL spatial; LOAD spatial;")
 
@@ -1046,8 +1054,8 @@ def write_roads_parquet(roads: list[dict], output_path: str):
             names STRUCT("primary" VARCHAR),
             subtype VARCHAR,
             class VARCHAR,
-            road_surface VARCHAR,
-            road_flags STRUCT(is_bridge BOOLEAN, is_tunnel BOOLEAN, is_link BOOLEAN, is_under_construction BOOLEAN),
+            road_surface STRUCT("value" VARCHAR, "between" DOUBLE[])[],
+            road_flags STRUCT("values" VARCHAR[], "between" DOUBLE[])[],
             geometry GEOMETRY,
             bbox STRUCT(xmin DOUBLE, xmax DOUBLE, ymin DOUBLE, ymax DOUBLE),
             sources STRUCT(property VARCHAR, dataset VARCHAR, record_id VARCHAR)[]
@@ -1055,6 +1063,19 @@ def write_roads_parquet(roads: list[dict], output_path: str):
     """)
 
     for r in roads:
+        # Build road_surface array: [{"value": "asphalt", "between": NULL}] or empty
+        surface_val = r["road_surface"]
+        # Build road_flags array from individual booleans
+        flag_names = []
+        if r.get("is_bridge"):
+            flag_names.append("is_bridge")
+        if r.get("is_tunnel"):
+            flag_names.append("is_tunnel")
+        if r.get("is_link"):
+            flag_names.append("is_link")
+        if r.get("is_under_construction"):
+            flag_names.append("is_under_construction")
+
         conn.execute("""
             INSERT INTO roads
             SELECT
@@ -1062,8 +1083,14 @@ def write_roads_parquet(roads: list[dict], output_path: str):
                 ROW(?) AS names,
                 ? AS subtype,
                 ? AS class,
-                ? AS road_surface,
-                ROW(?, ?, ?, ?) AS road_flags,
+                CASE WHEN ? IS NOT NULL
+                    THEN [ROW(?, NULL)]::STRUCT("value" VARCHAR, "between" DOUBLE[])[]
+                    ELSE []::STRUCT("value" VARCHAR, "between" DOUBLE[])[]
+                END AS road_surface,
+                CASE WHEN len(?::VARCHAR[]) > 0
+                    THEN [ROW(?::VARCHAR[], NULL)]::STRUCT("values" VARCHAR[], "between" DOUBLE[])[]
+                    ELSE []::STRUCT("values" VARCHAR[], "between" DOUBLE[])[]
+                END AS road_flags,
                 geom AS geometry,
                 ROW(ST_XMin(geom), ST_XMax(geom), ST_YMin(geom), ST_YMax(geom)) AS bbox,
                 []::STRUCT(property VARCHAR, dataset VARCHAR, record_id VARCHAR)[] AS sources
@@ -1073,11 +1100,12 @@ def write_roads_parquet(roads: list[dict], output_path: str):
             r["name"],
             r["subtype"],
             r["class"],
-            r["road_surface"],
-            r["is_bridge"],
-            r["is_tunnel"],
-            r["is_link"],
-            r["is_under_construction"],
+            # road_surface CASE
+            surface_val,
+            surface_val,
+            # road_flags CASE
+            flag_names,
+            flag_names,
             r["geometry_wkt"],
         ])
 
@@ -1217,9 +1245,15 @@ def main():
     result = verify_conn.execute(f"""
         SELECT COUNT(*) as total,
                COUNT(DISTINCT class) as road_classes,
-               SUM(CASE WHEN road_surface IS NULL THEN 1 ELSE 0 END) as null_surface,
-               SUM(CASE WHEN road_flags.is_bridge THEN 1 ELSE 0 END) as bridges,
-               SUM(CASE WHEN road_flags.is_tunnel THEN 1 ELSE 0 END) as tunnels
+               SUM(CASE WHEN road_surface[1].value IS NULL THEN 1 ELSE 0 END) as null_surface,
+               SUM(CASE WHEN list_contains(
+                   flatten(list_transform(road_flags, x -> x.values)),
+                   'is_bridge'
+               ) THEN 1 ELSE 0 END) as bridges,
+               SUM(CASE WHEN list_contains(
+                   flatten(list_transform(road_flags, x -> x.values)),
+                   'is_tunnel'
+               ) THEN 1 ELSE 0 END) as tunnels
         FROM read_parquet('{roads_path}')
     """).fetchone()
     print(f"  Roads: {result[0]} total, {result[1]} road classes, {result[2]} null surface, "

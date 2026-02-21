@@ -136,9 +136,12 @@ class PlacesOperations:
         }
 
         # Build and execute query
+        data_source = self._db.resolve_source(
+            "place", lat, lng, radius_m, self._config.places_path,
+        )
         sql, sql_params = places_in_radius_query(
             lat=lat, lng=lng, radius_m=radius_m, category=category,
-            data_source=self._config.places_path, limit=limit,
+            data_source=data_source, limit=limit,
             include_geometry=include_geometry,
             include_closed=include_closed,
         )
@@ -204,9 +207,12 @@ class PlacesOperations:
             "max_radius_m": max_radius_m,
         }
 
+        data_source = self._db.resolve_source(
+            "place", lat, lng, max_radius_m, self._config.places_path,
+        )
         sql, sql_params = nearest_place_query(
             lat=lat, lng=lng, category=category,
-            data_source=self._config.places_path,
+            data_source=data_source,
             max_radius_m=max_radius_m, include_geometry=include_geometry,
             include_closed=include_closed,
         )
@@ -265,9 +271,12 @@ class PlacesOperations:
             "lat": lat, "lng": lng, "radius_m": radius_m, "category": category,
         }
 
+        data_source = self._db.resolve_source(
+            "place", lat, lng, radius_m, self._config.places_path,
+        )
         sql, sql_params = count_places_query(
             lat=lat, lng=lng, radius_m=radius_m, category=category,
-            data_source=self._config.places_path,
+            data_source=data_source,
             include_closed=include_closed,
         )
 

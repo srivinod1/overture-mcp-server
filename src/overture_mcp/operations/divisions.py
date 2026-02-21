@@ -30,9 +30,12 @@ class DivisionsOperations:
 
         query_params = {"lat": lat, "lng": lng}
 
+        data_source = self._db.resolve_source_point(
+            "division_area", lat, lng, self._config.divisions_path,
+        )
         sql, sql_params = point_in_boundary_query(
             lat=lat, lng=lng,
-            data_source=self._config.divisions_path,
+            data_source=data_source,
         )
 
         rows = await self._db.execute_query(sql, sql_params)

@@ -64,7 +64,7 @@ class TestS3Paths:
     def test_s3_path_construction(self):
         config = ServerConfig(api_key="test", data_version="2026-01-21.0")
         path = config.s3_path("places", "place")
-        assert path == f"s3://{S3_BUCKET}/release/2026-01-21.0/theme=places/type=place/*"
+        assert path == f"read_parquet('s3://{S3_BUCKET}/release/2026-01-21.0/theme=places/type=place/*', hive_partitioning=1)"
 
     def test_places_path(self):
         config = ServerConfig(api_key="test")

@@ -5,6 +5,7 @@ Provides a single point of control for:
 - DuckDB connection lifecycle
 - Spatial and httpfs extension loading
 - S3 region configuration
+- STAC index loading for targeted S3 file resolution
 - Query concurrency limiting via asyncio.Semaphore
 - Query timeout enforcement
 """
@@ -13,12 +14,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from contextlib import asynccontextmanager
+import time
 from typing import Any
 
 import duckdb
 
 from overture_mcp.config import S3_REGION, ServerConfig
+from overture_mcp.stac import StacIndex
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +42,12 @@ class Database:
         self._conn: duckdb.DuckDBPyConnection | None = None
         self._semaphore = asyncio.Semaphore(config.max_concurrent_queries)
         self._initialized = False
+        self._stac = StacIndex()
+
+    @property
+    def stac(self) -> StacIndex:
+        """The STAC index for targeted S3 file resolution."""
+        return self._stac
 
     def initialize(self) -> None:
         """Initialize the DuckDB connection with required extensions.
@@ -62,6 +70,111 @@ class Database:
 
         self._initialized = True
         logger.info("DuckDB initialized with spatial + httpfs extensions")
+
+    def load_stac_index(self) -> None:
+        """Download and cache the STAC index for targeted file resolution.
+
+        Uses the DuckDB connection to fetch the STAC GeoParquet index from
+        Overture's STAC endpoint. This is a small (~100-500KB) download that
+        enables resolving which S3 files contain data for a given bbox.
+
+        Must be called after initialize(). If loading fails, the server
+        falls back to glob patterns (slower cold starts but still functional).
+        """
+        if not self._initialized or self._conn is None:
+            raise RuntimeError("Call initialize() before load_stac_index().")
+
+        self._stac.load(self._conn, self._config.data_version)
+
+    def resolve_source(
+        self,
+        collection: str,
+        lat: float,
+        lng: float,
+        radius_m: int,
+        fallback: str,
+    ) -> str:
+        """Resolve the data source for a query using STAC index.
+
+        If the STAC index is loaded, finds only the S3 files that overlap
+        the query's bounding box and returns a read_parquet([...]) fragment.
+        Otherwise falls back to the glob pattern from config.
+
+        Args:
+            collection: STAC collection name (e.g., "place", "building").
+            lat: Query center latitude.
+            lng: Query center longitude.
+            radius_m: Query radius in meters.
+            fallback: Glob-based read_parquet() string from config (used if
+                      STAC is unavailable or no files match).
+
+        Returns:
+            SQL data source string (either targeted file list or glob).
+        """
+        resolved = self._stac.resolve(collection, lat, lng, radius_m)
+        return resolved if resolved is not None else fallback
+
+    def resolve_source_point(
+        self,
+        collection: str,
+        lat: float,
+        lng: float,
+        fallback: str,
+    ) -> str:
+        """Resolve data source for a point-in-polygon query.
+
+        Like resolve_source but for operations without a radius
+        (e.g., point_in_admin_boundary, land_use_at_point).
+
+        Args:
+            collection: STAC collection name.
+            lat: Query point latitude.
+            lng: Query point longitude.
+            fallback: Glob-based fallback from config.
+
+        Returns:
+            SQL data source string.
+        """
+        resolved = self._stac.resolve_for_point(collection, lat, lng)
+        return resolved if resolved is not None else fallback
+
+    def warmup(self, config: ServerConfig) -> None:
+        """Pre-fetch parquet metadata from S3 for all themes.
+
+        DuckDB caches parquet file footers (row group statistics) after the
+        first query against each file. Without warmup, the first agent query
+        per theme pays a ~10-30s cold-start penalty while metadata is fetched.
+        This method runs a minimal query (LIMIT 0) against each theme to force
+        the metadata download so all subsequent queries are fast (<5s).
+
+        Should be called once at server startup, after initialize().
+        """
+        if not self._initialized:
+            raise RuntimeError("Call initialize() before warmup().")
+
+        theme_paths = [
+            ("places", config.places_path),
+            ("buildings", config.buildings_path),
+            ("divisions", config.divisions_path),
+            ("transportation", config.transportation_path),
+            ("land_use", config.land_use_path),
+        ]
+
+        logger.info("Warming up parquet metadata cache for %d themes...", len(theme_paths))
+        total_start = time.time()
+
+        for name, path in theme_paths:
+            start = time.time()
+            try:
+                self._conn.execute(f"SELECT 1 FROM {path} LIMIT 0")
+                elapsed = time.time() - start
+                logger.info("  %s metadata cached in %.1fs", name, elapsed)
+            except Exception as e:
+                elapsed = time.time() - start
+                logger.warning("  %s warmup failed after %.1fs: %s", name, elapsed, e)
+
+        total_elapsed = time.time() - total_start
+        logger.info("Metadata warmup complete in %.1fs", total_elapsed)
 
     def initialize_local(
         self,

@@ -41,9 +41,12 @@ class TransportationOperations:
 
         query_params = {"lat": lat, "lng": lng, "radius_m": radius_m}
 
+        data_source = self._db.resolve_source(
+            "segment", lat, lng, radius_m, self._config.transportation_path,
+        )
         sql, sql_params = road_count_by_class_query(
             lat=lat, lng=lng, radius_m=radius_m,
-            data_source=self._config.transportation_path,
+            data_source=data_source,
         )
 
         rows = await self._db.execute_query(sql, sql_params)
@@ -96,9 +99,12 @@ class TransportationOperations:
             "road_class": road_class, "max_radius_m": max_radius_m,
         }
 
+        data_source = self._db.resolve_source(
+            "segment", lat, lng, max_radius_m, self._config.transportation_path,
+        )
         sql, sql_params = nearest_road_of_class_query(
             lat=lat, lng=lng, road_class=road_class,
-            data_source=self._config.transportation_path,
+            data_source=data_source,
             max_radius_m=max_radius_m,
             include_geometry=include_geometry,
         )
@@ -149,9 +155,12 @@ class TransportationOperations:
 
         query_params = {"lat": lat, "lng": lng, "radius_m": radius_m}
 
+        data_source = self._db.resolve_source(
+            "segment", lat, lng, radius_m, self._config.transportation_path,
+        )
         sql, sql_params = road_surface_composition_query(
             lat=lat, lng=lng, radius_m=radius_m,
-            data_source=self._config.transportation_path,
+            data_source=data_source,
         )
 
         rows = await self._db.execute_query(sql, sql_params)

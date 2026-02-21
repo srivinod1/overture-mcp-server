@@ -51,6 +51,19 @@ class TestPointInBoundaryQuery:
         assert params[4] == 4.90  # lng
         assert params[5] == 52.37  # lat
 
+    def test_filters_to_land_class(self):
+        """Should filter to class='land' to exclude maritime duplicates."""
+        sql, _ = point_in_boundary_query(52.37, 4.90, "divisions")
+        assert "class = 'land'" in sql
+
+    def test_derives_admin_level_from_subtype(self):
+        """admin_level is derived via CASE on subtype, not a raw column."""
+        sql, _ = point_in_boundary_query(52.37, 4.90, "divisions")
+        assert "CASE subtype" in sql
+        assert "WHEN 'country' THEN 2" in sql
+        assert "WHEN 'region' THEN 4" in sql
+        assert "WHEN 'locality' THEN 8" in sql
+
     def test_no_limit(self):
         """Should return all matching boundaries."""
         sql, _ = point_in_boundary_query(52.37, 4.90, "divisions")

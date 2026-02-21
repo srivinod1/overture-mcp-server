@@ -89,16 +89,25 @@ def nearest_road_of_class_query(
     sql = f"""SELECT
         names."primary" AS name,
         class AS road_class,
-        road_surface,
+        road_surface[1].value AS road_surface,
         CAST(ST_Distance_Spheroid(
             ST_FlipCoordinates(ST_PointOnSurface(geometry)),
             ST_FlipCoordinates(ST_Point(?, ?))
         ) AS INTEGER) AS distance_m,
         ST_Y(ST_PointOnSurface(geometry)) AS lat,
         ST_X(ST_PointOnSurface(geometry)) AS lng,
-        COALESCE(road_flags.is_bridge, false) AS is_bridge,
-        COALESCE(road_flags.is_tunnel, false) AS is_tunnel,
-        COALESCE(road_flags.is_link, false) AS is_link{geometry_col}
+        COALESCE(list_contains(
+            flatten(list_transform(road_flags, x -> x.values)),
+            'is_bridge'
+        ), false) AS is_bridge,
+        COALESCE(list_contains(
+            flatten(list_transform(road_flags, x -> x.values)),
+            'is_tunnel'
+        ), false) AS is_tunnel,
+        COALESCE(list_contains(
+            flatten(list_transform(road_flags, x -> x.values)),
+            'is_link'
+        ), false) AS is_link{geometry_col}
     FROM {data_source}
     WHERE bbox.xmin BETWEEN ? AND ?
       AND bbox.ymin BETWEEN ? AND ?
@@ -145,7 +154,7 @@ def road_surface_composition_query(
     lat_min, lat_max, lng_min, lng_max = compute_bbox(lat, lng, radius_m)
 
     sql = f"""SELECT
-        COALESCE(road_surface, 'unknown') AS surface_type,
+        COALESCE(road_surface[1].value, 'unknown') AS surface_type,
         COUNT(*) AS count
     FROM {data_source}
     WHERE bbox.xmin BETWEEN ? AND ?
@@ -155,7 +164,7 @@ def road_surface_composition_query(
             ST_FlipCoordinates(ST_PointOnSurface(geometry)),
             ST_FlipCoordinates(ST_Point(?, ?))
           ) < ?
-    GROUP BY COALESCE(road_surface, 'unknown')
+    GROUP BY COALESCE(road_surface[1].value, 'unknown')
     ORDER BY count DESC"""
 
     params = [
