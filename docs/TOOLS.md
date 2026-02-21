@@ -214,10 +214,35 @@ All operations return the same response format regardless of tool mode:
 
 ## Error Responses (Both Modes)
 
-| Error | Cause |
-|-------|-------|
-| `"lat must be between -90 and 90"` | Invalid latitude |
-| `"lng must be between -180 and 180"` | Invalid longitude |
-| `"radius_m must be between 1 and 50000"` | Radius out of bounds |
-| `"Unknown category: {x}. Use get_place_categories to find valid categories."` | Invalid category ID |
-| `"Query timeout after 30s. Try a smaller radius."` | S3 query took too long |
+All errors return a structured JSON object:
+
+```json
+{
+  "error": "lat must be between -90 and 90. Received: 200",
+  "error_type": "validation_error",
+  "query_params": {
+    "lat": 200,
+    "lng": 4.9041,
+    "radius_m": 500,
+    "category": "coffee_shop"
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `error` | string | Description of the error. |
+| `error_type` | string | One of: `validation_error`, `query_timeout`, `internal_error`, `auth_error`. |
+| `query_params` | object | Echo of input parameters (when available). |
+
+### Common Errors
+
+| Error | Type | Cause |
+|-------|------|-------|
+| `"lat must be between -90 and 90"` | `validation_error` | Invalid latitude |
+| `"lng must be between -180 and 180"` | `validation_error` | Invalid longitude |
+| `"radius_m must be between 1 and 50000"` | `validation_error` | Radius out of bounds |
+| `"Unknown category: {x}. Use get_place_categories to find valid categories."` | `validation_error` | Invalid category ID |
+| `"Query timeout after 30s. Try a smaller radius."` | `query_timeout` | S3 query took too long |
+| `"Missing required parameter: {x}"` | `validation_error` | Required param not provided |
+| `"Unknown operation: {x}. Use list_operations to see available operations."` | `validation_error` | Invalid operation name (progressive mode) |

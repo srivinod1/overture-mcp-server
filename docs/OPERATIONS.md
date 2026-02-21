@@ -6,12 +6,16 @@ This document defines every operation available through `execute_operation`. Eac
 
 ## Conventions
 
-- Coordinates are `(lat, lng)` — latitude first, longitude second
+- Coordinates are `(lat, lng)` — latitude first, longitude second. Internally, `ST_Point` takes `(lng, lat)`. The server handles this conversion.
 - All distances are in **meters**
 - All operations return the [standard response envelope](TOOLS.md#tool-3-execute_operation)
 - Maximum radius: 50,000m (50km)
 - Maximum results: 100 per query
 - Query timeout: 30 seconds
+- All user-provided string values use parameterized queries (`?` placeholders). No string interpolation in SQL.
+- Category values are validated against the cached taxonomy before reaching SQL.
+- Spatial filtering uses bbox pre-filter (degrees) + `ST_Distance_Spheroid` (meters) — not `ST_DWithin`.
+- When `include_geometry=true`, WKT strings are capped at 10,000 characters.
 
 ---
 
@@ -115,14 +119,15 @@ SELECT
     categories.primary AS category,
     ST_Y(geometry) AS lat,
     ST_X(geometry) AS lng,
-    CAST(ST_Distance_Spheroid(geometry, ST_Point({lng}, {lat})) AS INTEGER) AS distance_m
+    CAST(ST_Distance_Spheroid(geometry, ST_Point(?, ?)) AS INTEGER) AS distance_m
 FROM read_parquet('s3://overturemaps-us-west-2/release/{version}/theme=places/type=place/*')
-WHERE bbox.xmin BETWEEN {lng_min} AND {lng_max}
-  AND bbox.ymin BETWEEN {lat_min} AND {lat_max}
-  AND ST_DWithin(geometry, ST_Point({lng}, {lat}), {radius_m})
-  AND categories.primary = '{category}'
+WHERE bbox.xmin BETWEEN ? AND ?
+  AND bbox.ymin BETWEEN ? AND ?
+  AND ST_Distance_Spheroid(geometry, ST_Point(?, ?)) < ?
+  AND categories.primary = ?
 ORDER BY distance_m ASC
-LIMIT {limit}
+LIMIT ?
+-- params: [lng, lat, lng_min, lng_max, lat_min, lat_max, lng, lat, radius_m, category, limit]
 ```
 
 **Empty result suggestion:**
@@ -217,10 +222,11 @@ Count how many places of a category exist within a radius. Returns only the coun
 ```sql
 SELECT COUNT(*) AS count
 FROM read_parquet('s3://overturemaps-us-west-2/release/{version}/theme=places/type=place/*')
-WHERE bbox.xmin BETWEEN {lng_min} AND {lng_max}
-  AND bbox.ymin BETWEEN {lat_min} AND {lat_max}
-  AND ST_DWithin(geometry, ST_Point({lng}, {lat}), {radius_m})
-  AND categories.primary = '{category}'
+WHERE bbox.xmin BETWEEN ? AND ?
+  AND bbox.ymin BETWEEN ? AND ?
+  AND ST_Distance_Spheroid(geometry, ST_Point(?, ?)) < ?
+  AND categories.primary = ?
+-- params: [lng_min, lng_max, lat_min, lat_max, lng, lat, radius_m, category]
 ```
 
 **Empty result suggestion:**
@@ -267,9 +273,10 @@ Count total buildings within a radius of a point.
 ```sql
 SELECT COUNT(*) AS count
 FROM read_parquet('s3://overturemaps-us-west-2/release/{version}/theme=buildings/type=building/*')
-WHERE bbox.xmin BETWEEN {lng_min} AND {lng_max}
-  AND bbox.ymin BETWEEN {lat_min} AND {lat_max}
-  AND ST_DWithin(geometry, ST_Point({lng}, {lat}), {radius_m})
+WHERE bbox.xmin BETWEEN ? AND ?
+  AND bbox.ymin BETWEEN ? AND ?
+  AND ST_Distance_Spheroid(geometry, ST_Point(?, ?)) < ?
+-- params: [lng_min, lng_max, lat_min, lat_max, lng, lat, radius_m]
 ```
 
 **Empty result suggestion:**
@@ -327,11 +334,12 @@ SELECT
     COALESCE(class, 'unknown') AS building_class,
     COUNT(*) AS count
 FROM read_parquet('s3://overturemaps-us-west-2/release/{version}/theme=buildings/type=building/*')
-WHERE bbox.xmin BETWEEN {lng_min} AND {lng_max}
-  AND bbox.ymin BETWEEN {lat_min} AND {lat_max}
-  AND ST_DWithin(geometry, ST_Point({lng}, {lat}), {radius_m})
+WHERE bbox.xmin BETWEEN ? AND ?
+  AND bbox.ymin BETWEEN ? AND ?
+  AND ST_Distance_Spheroid(geometry, ST_Point(?, ?)) < ?
 GROUP BY COALESCE(class, 'unknown')
 ORDER BY count DESC
+-- params: [lng_min, lng_max, lat_min, lat_max, lng, lat, radius_m]
 ```
 
 **Empty result suggestion:**
@@ -398,10 +406,11 @@ SELECT
     admin_level,
     subtype
 FROM read_parquet('s3://overturemaps-us-west-2/release/{version}/theme=divisions/type=division_area/*')
-WHERE bbox.xmin <= {lng} AND bbox.xmax >= {lng}
-  AND bbox.ymin <= {lat} AND bbox.ymax >= {lat}
-  AND ST_Contains(geometry, ST_Point({lng}, {lat}))
+WHERE bbox.xmin <= ? AND bbox.xmax >= ?
+  AND bbox.ymin <= ? AND bbox.ymax >= ?
+  AND ST_Contains(geometry, ST_Point(?, ?))
 ORDER BY admin_level ASC
+-- params: [lng, lng, lat, lat, lng, lat]
 ```
 
 **Empty result suggestion:**

@@ -162,7 +162,30 @@ Simple `X-API-Key` header validation. The server reads `OVERTURE_API_KEY` from e
 ### 3.10 Concurrency Control
 `asyncio.Semaphore(3)` limits concurrent DuckDB queries to 3. DuckDB supports concurrent reads (we are read-only), but memory is the bottleneck on Railway's constrained environment. This prevents OOM from multiple large S3 scans running in parallel.
 
-### 3.11 Structured Empty Results
+When all semaphore slots are in use, new requests queue (the coroutine blocks on `async with semaphore`). No request is dropped. The 30-second query timeout applies per-query, not including queue wait time. If a query errors or times out, the semaphore is always released via `async with` (or try/finally). This guarantees no deadlocks.
+
+### 3.11 SQL Injection Prevention
+All user-provided string values (`category`, `query`) are handled via **parameterized queries** using DuckDB's `execute(sql, params)` with `?` placeholders. User strings never appear in SQL via f-string interpolation or string concatenation.
+
+Additionally, `category` values are validated against the cached taxonomy before reaching SQL. If a category is not in the cache, the server returns an error immediately without querying S3. This provides a second layer of defense.
+
+Numeric values (`lat`, `lng`, `radius_m`, `limit`) are type-validated (must be int or float within documented ranges) before reaching the query layer.
+
+### 3.12 Spatial Filtering Strategy
+Radius-based queries use a two-stage spatial filter:
+
+1. **Bounding box pre-filter** (fast, approximate): Convert the radius from meters to approximate degree deltas and filter using Parquet bbox metadata. DuckDB skips irrelevant row groups entirely.
+2. **Spheroid distance filter** (accurate): `ST_Distance_Spheroid(geometry, point) < radius_m` for exact meter-based filtering.
+
+This ensures the `distance_m` returned in results is consistent with the filter boundary — a place reported as 495m away will never appear when querying with a 500m radius and vice versa. `ST_DWithin` is NOT used because it operates in the geometry's coordinate units (degrees for lon/lat), not meters.
+
+### 3.13 Coordinate Order
+Operations accept `(lat, lng)` — latitude first, longitude second. Internally, DuckDB's `ST_Point` takes `(lng, lat)` — X before Y per GIS convention. The server handles this conversion. Callers always use `(lat, lng)`.
+
+### 3.14 Geometry Size Cap
+When `include_geometry=true`, WKT geometry strings are capped at 10,000 characters. If a geometry exceeds this (e.g., a complex country boundary polygon), it is omitted from the result with a note: `"geometry_note": "Geometry too large (>10,000 chars). Omitted to save tokens."` This prevents large polygons from the divisions theme from consuming agent context.
+
+### 3.15 Structured Empty Results
 Zero results is valid data, not an error. Response format:
 ```json
 {
@@ -174,7 +197,7 @@ Zero results is valid data, not an error. Response format:
 ```
 Agents need structured data to reason and self-correct.
 
-### 3.12 Overture Data Version
+### 3.16 Overture Data Version
 Current: `2026-01-21.0`. Overture releases quarterly. The data version is configured as a single constant — updating to a new release is a one-line change.
 
 ---
@@ -336,26 +359,25 @@ theme=buildings/type=building/    → Building operations
 theme=divisions/type=division_area/  → Admin boundary operations
 ```
 
-### Spatial Query Pattern
-All radius-based queries use DuckDB Spatial's `ST_DWithin` with `ST_Point`:
+### Spatial Query Pattern (Two-Stage Filter)
+All radius-based queries use a two-stage spatial filter:
+
+**Stage 1 — Bounding box pre-filter (degrees, fast):**
+DuckDB uses Parquet row group statistics to skip irrelevant files entirely. The bbox deltas are computed from the radius in meters converted to approximate degrees.
+
+**Stage 2 — Spheroid distance filter (meters, accurate):**
+`ST_Distance_Spheroid` computes true Earth-surface distance in meters.
+
 ```sql
 SELECT *
 FROM read_parquet('s3://overturemaps-us-west-2/release/2026-01-21.0/theme=places/type=place/*')
-WHERE ST_DWithin(
-    geometry,
-    ST_Point({lng}, {lat}),
-    {radius_m}
-)
-AND categories.primary = '{category}'
+WHERE bbox.xmin BETWEEN ? AND ?          -- Stage 1: bbox pre-filter
+  AND bbox.ymin BETWEEN ? AND ?
+  AND ST_Distance_Spheroid(geometry, ST_Point(?, ?)) < ?   -- Stage 2: exact meters
+  AND categories.primary = ?             -- parameterized, not interpolated
 ```
 
-### Bounding Box Pre-filter
-For performance, add a bounding box pre-filter before the distance check. DuckDB can use Parquet row group statistics to skip irrelevant files:
-```sql
-WHERE bbox.xmin BETWEEN {lng - delta} AND {lng + delta}
-  AND bbox.ymin BETWEEN {lat - delta} AND {lat + delta}
-  AND ST_DWithin(geometry, ST_Point({lng}, {lat}), {radius_m})
-```
+`ST_DWithin` is NOT used because it operates in the geometry's coordinate units (degrees for lon/lat data), not meters.
 
 ---
 
