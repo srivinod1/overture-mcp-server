@@ -7,11 +7,9 @@ An open-source MCP server that exposes [Overture Maps](https://overturemaps.org/
 AI agents need geospatial intelligence. This server gives them direct access to Overture Maps data through clean, composable tool primitives.
 
 **Ask questions like:**
-- "How many cafes are within 500m of this location?"
-- "What's the building composition (residential vs commercial) in this area?"
-- "What city/country does this coordinate fall in?"
-- "What road types are most common near this location?"
-- "What is the land use around this point?"
+- "What percentage of buildings within 1km are residential vs commercial?"
+- "What's the land use composition — residential, industrial, or mixed-use?"
+- "How does cafe density compare between two potential retail locations?"
 
 ## How It Fits in the Agent Stack
 
