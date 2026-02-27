@@ -31,7 +31,7 @@ class TestMemoryUsage:
         for _ in range(5):
             await execute_operation(test_registry, "places_in_radius", {
                 "lat": 52.3676, "lng": 4.9041, "radius_m": 500,
-                "category": "coffee_shop",
+                "category": "cafe",
             })
 
         mem_before = process.memory_info().rss
@@ -40,7 +40,7 @@ class TestMemoryUsage:
         for _ in range(50):
             await execute_operation(test_registry, "places_in_radius", {
                 "lat": 52.3676, "lng": 4.9041, "radius_m": 500,
-                "category": "coffee_shop",
+                "category": "cafe",
             })
 
         mem_after = process.memory_info().rss
@@ -56,7 +56,7 @@ class TestMemoryUsage:
 
         operations = [
             ("get_place_categories", {"query": "coffee"}),
-            ("places_in_radius", {"lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "coffee_shop"}),
+            ("places_in_radius", {"lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "cafe"}),
             ("building_count_in_radius", {"lat": 52.3676, "lng": 4.9041, "radius_m": 500}),
             ("point_in_admin_boundary", {"lat": 52.3676, "lng": 4.9041}),
             ("road_count_by_class", {"lat": 52.3676, "lng": 4.9041, "radius_m": 500}),
@@ -89,7 +89,7 @@ class TestMemoryUsage:
         # Run 50 invalid queries
         for _ in range(50):
             await execute_operation(test_registry, "places_in_radius", {
-                "lat": 999, "lng": 4.9041, "radius_m": 500, "category": "coffee_shop",
+                "lat": 999, "lng": 4.9041, "radius_m": 500, "category": "cafe",
             })
 
         mem_after = process.memory_info().rss

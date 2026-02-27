@@ -116,7 +116,7 @@ class TestExecuteOperation:
         """ValidationError should be caught and returned as structured error."""
         result = await execute_operation(test_registry, "places_in_radius", {
             "lat": 999,  # invalid
-            "lng": 4.9041, "radius_m": 500, "category": "coffee_shop",
+            "lng": 4.9041, "radius_m": 500, "category": "cafe",
         })
         assert "error" in result
         assert result["error_type"] == "validation_error"
@@ -132,7 +132,7 @@ class TestExecuteOperation:
     @pytest.mark.asyncio
     async def test_query_params_echoed_on_error(self, test_registry):
         """Error responses should echo query_params."""
-        params = {"lat": 999, "lng": 4.9041, "radius_m": 500, "category": "coffee_shop"}
+        params = {"lat": 999, "lng": 4.9041, "radius_m": 500, "category": "cafe"}
         result = await execute_operation(test_registry, "places_in_radius", params)
         assert result.get("query_params") == params
 

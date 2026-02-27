@@ -162,7 +162,7 @@ def build_registry(
         handler=places_ops.places_in_radius,
         example={
             "operation": "places_in_radius",
-            "params": {"lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "coffee_shop"},
+            "params": {"lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "cafe"},
         },
     ))
 

@@ -12,7 +12,7 @@ from overture_mcp.server import execute_operation
 @pytest.mark.asyncio
 class TestRetailSiteSelection:
     """
-    Scenario: An agent evaluates Amsterdam for a new coffee shop location.
+    Scenario: An agent evaluates Amsterdam for a new cafe location.
     It queries competitor density, building composition, and admin boundaries.
     """
 
@@ -26,18 +26,18 @@ class TestRetailSiteSelection:
         assert "coffee_shop" in cats
 
     async def test_step2_count_competitors(self, test_registry):
-        """Step 2: Count existing coffee shops near the proposed location."""
+        """Step 2: Count existing cafes near the proposed location."""
         result = await execute_operation(test_registry, "count_places_by_type_in_radius", {
-            "lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "coffee_shop",
+            "lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "cafe",
         })
         assert "error" not in result
         assert result["results"][0]["count"] > 0
 
     async def test_step3_find_competitors(self, test_registry):
-        """Step 3: List nearby coffee shops with distances."""
+        """Step 3: List nearby cafes with distances."""
         result = await execute_operation(test_registry, "places_in_radius", {
             "lat": 52.3676, "lng": 4.9041, "radius_m": 500,
-            "category": "coffee_shop", "limit": 100,
+            "category": "cafe", "limit": 100,
         })
         assert result["count"] > 0
         # Results are ordered by distance
@@ -74,7 +74,7 @@ class TestRetailSiteSelection:
     async def test_step7_nearest_competitor(self, test_registry):
         """Step 7: Find the single closest competitor."""
         result = await execute_operation(test_registry, "nearest_place_of_type", {
-            "lat": 52.3676, "lng": 4.9041, "category": "coffee_shop",
+            "lat": 52.3676, "lng": 4.9041, "category": "cafe",
         })
         assert result["count"] == 1
         assert result["results"][0]["distance_m"] >= 0
@@ -83,11 +83,11 @@ class TestRetailSiteSelection:
     async def test_full_workflow_consistency(self, test_registry):
         """Cross-validate: count matches number of places found."""
         count_result = await execute_operation(test_registry, "count_places_by_type_in_radius", {
-            "lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "coffee_shop",
+            "lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "cafe",
         })
         places_result = await execute_operation(test_registry, "places_in_radius", {
             "lat": 52.3676, "lng": 4.9041, "radius_m": 500,
-            "category": "coffee_shop", "limit": 100,
+            "category": "cafe", "limit": 100,
         })
         assert count_result["results"][0]["count"] == places_result["count"]
 

@@ -88,7 +88,7 @@ class TestCustomerSegmentation:
 
     async def test_multi_category_comparison(self, test_registry):
         """Compare different place categories to profile the neighborhood."""
-        categories_to_check = ["coffee_shop", "restaurant", "bank"]
+        categories_to_check = ["cafe", "restaurant", "bank"]
         counts = {}
         for cat in categories_to_check:
             result = await execute_operation(

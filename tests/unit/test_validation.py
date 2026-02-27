@@ -17,7 +17,7 @@ from overture_mcp.validation import (
 )
 
 
-SAMPLE_CATEGORIES = {"coffee_shop", "restaurant", "bank", "hospital", "atm"}
+SAMPLE_CATEGORIES = {"coffee_shop", "cafe", "restaurant", "bank", "hospital", "atm"}
 
 
 class TestValidateLat:
@@ -173,7 +173,7 @@ class TestValidateCategory:
     """Tests for category validation."""
 
     def test_valid_category(self):
-        assert validate_category("coffee_shop", SAMPLE_CATEGORIES) == "coffee_shop"
+        assert validate_category("cafe", SAMPLE_CATEGORIES) == "cafe"
 
     def test_unknown_category(self):
         with pytest.raises(ValidationError, match="Unknown category"):
@@ -192,7 +192,7 @@ class TestValidateCategory:
             validate_category("   ", SAMPLE_CATEGORIES)
 
     def test_strips_whitespace(self):
-        assert validate_category(" coffee_shop ", SAMPLE_CATEGORIES) == "coffee_shop"
+        assert validate_category(" cafe ", SAMPLE_CATEGORIES) == "cafe"
 
     def test_sql_injection_payload(self):
         with pytest.raises(ValidationError, match="Unknown category"):

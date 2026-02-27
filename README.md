@@ -7,7 +7,7 @@ An open-source MCP server that exposes [Overture Maps](https://overturemaps.org/
 AI agents need geospatial intelligence. This server gives them direct access to Overture Maps data through clean, composable tool primitives.
 
 **Ask questions like:**
-- "How many coffee shops are within 500m of this location?"
+- "How many cafes are within 500m of this location?"
 - "What's the building composition (residential vs commercial) in this area?"
 - "What city/country does this coordinate fall in?"
 - "What road types are most common near this location?"
@@ -123,17 +123,17 @@ python -m overture_mcp.server
 ## Example Agent Interaction
 
 ```
-User: "Compare coffee shop density near two potential retail locations in Amsterdam"
+User: "Compare cafe density near two potential retail locations in Amsterdam"
 
 Agent:
   1. Calls Geocoding MCP -> geocode("Leidseplein, Amsterdam") -> (52.3636, 4.8828)
   2. Calls Geocoding MCP -> geocode("De Pijp, Amsterdam") -> (52.3509, 4.8936)
-  3. Calls Overture MCP -> get_place_categories({query: "coffee"})
+  3. Calls Overture MCP -> get_place_categories({query: "cafe"})
   4. Calls Overture MCP -> count_places_by_type_in_radius(
-       {lat: 52.3636, lng: 4.8828, radius_m: 500, category: "coffee_shop"}) -> 12
+       {lat: 52.3636, lng: 4.8828, radius_m: 500, category: "cafe"}) -> 12
   5. Calls Overture MCP -> count_places_by_type_in_radius(
-       {lat: 52.3509, lng: 4.8936, radius_m: 500, category: "coffee_shop"}) -> 7
-  6. Returns: "Leidseplein has 12 coffee shops within 500m vs 7 in De Pijp..."
+       {lat: 52.3509, lng: 4.8936, radius_m: 500, category: "cafe"}) -> 7
+  6. Returns: "Leidseplein has 12 cafes within 500m vs 7 in De Pijp..."
 ```
 
 ## Architecture

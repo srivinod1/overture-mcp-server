@@ -16,17 +16,17 @@ class TestEmptyPlacesResults:
     async def test_no_places_at_ocean(self, test_registry):
         """Ocean point should return empty results with suggestion."""
         result = await execute_operation(test_registry, "places_in_radius", {
-            "lat": 0.0, "lng": 0.0, "radius_m": 500, "category": "coffee_shop",
+            "lat": 0.0, "lng": 0.0, "radius_m": 500, "category": "cafe",
         })
         assert result["count"] == 0
         assert result["results"] == []
         assert result["suggestion"] is not None
-        assert "coffee_shop" in result["suggestion"]
+        assert "cafe" in result["suggestion"]
 
     async def test_empty_envelope_structure(self, test_registry):
         """Empty result should still have full envelope."""
         result = await execute_operation(test_registry, "places_in_radius", {
-            "lat": 0.0, "lng": 0.0, "radius_m": 500, "category": "coffee_shop",
+            "lat": 0.0, "lng": 0.0, "radius_m": 500, "category": "cafe",
         })
         assert "results" in result
         assert "count" in result
@@ -37,7 +37,7 @@ class TestEmptyPlacesResults:
     async def test_no_nearest_at_ocean(self, test_registry):
         """Nearest place at ocean point should return empty."""
         result = await execute_operation(test_registry, "nearest_place_of_type", {
-            "lat": 0.0, "lng": 0.0, "category": "coffee_shop",
+            "lat": 0.0, "lng": 0.0, "category": "cafe",
         })
         assert result["count"] == 0
         assert result["suggestion"] is not None
@@ -45,7 +45,7 @@ class TestEmptyPlacesResults:
     async def test_zero_count_at_ocean(self, test_registry):
         """Count at ocean point should be zero with suggestion."""
         result = await execute_operation(test_registry, "count_places_by_type_in_radius", {
-            "lat": 0.0, "lng": 0.0, "radius_m": 500, "category": "coffee_shop",
+            "lat": 0.0, "lng": 0.0, "radius_m": 500, "category": "cafe",
         })
         assert result["count"] == 0
         assert result["suggestion"] is not None
@@ -62,7 +62,7 @@ class TestEmptyPlacesResults:
         """1m radius should miss everything (nearest is 95m away)."""
         result = await execute_operation(test_registry, "places_in_radius", {
             "lat": 52.3676, "lng": 4.9041, "radius_m": 1,
-            "category": "coffee_shop",
+            "category": "cafe",
         })
         assert result["count"] == 0
 

@@ -30,7 +30,7 @@ Each operation is registered as its own MCP tool. The agent sees all operations 
 
 **Agent workflow:**
 ```
-Turn 1: places_in_radius({lat: 52.36, lng: 4.90, radius_m: 500, category: "coffee_shop"})
+Turn 1: places_in_radius({lat: 52.36, lng: 4.90, radius_m: 500, category: "cafe"})
 Turn 1: land_use_composition({lat: 52.36, lng: 4.90, radius_m: 1000})
 ```
 
@@ -132,7 +132,7 @@ Returns the full parameter schema and an example for a specific operation.
       "lat": 52.3676,
       "lng": 4.9041,
       "radius_m": 500,
-      "category": "coffee_shop"
+      "category": "cafe"
     }
   }
 }
@@ -204,7 +204,7 @@ All operations return the same response format regardless of tool mode:
     "lat": 52.3676,
     "lng": 4.9041,
     "radius_m": 500,
-    "category": "coffee_shop"
+    "category": "cafe"
   },
   "data_version": "2026-01-21.0",
   "suggestion": null
@@ -231,7 +231,7 @@ All errors return a structured JSON object:
     "lat": 200,
     "lng": 4.9041,
     "radius_m": 500,
-    "category": "coffee_shop"
+    "category": "cafe"
   }
 }
 ```

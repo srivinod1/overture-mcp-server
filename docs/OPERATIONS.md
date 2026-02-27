@@ -40,8 +40,8 @@ Search and browse the Overture Maps place category taxonomy. Agents call this to
 ```json
 {
   "results": [
-    {"category": "coffee_shop", "description": "A shop that primarily serves coffee"},
     {"category": "cafe", "description": "A casual dining establishment serving coffee, tea, and light meals"},
+    {"category": "coffee_shop", "description": "A shop that primarily serves coffee"},
     {"category": "coffee_roaster", "description": "A business that roasts coffee beans"}
   ],
   "count": 3,
@@ -93,7 +93,7 @@ Find all places matching a category within a radius of a point. Returns name, lo
     },
     {
       "name": "Brew & Co. Rokin",
-      "category": "coffee_shop",
+      "category": "cafe",
       "lat": 52.3701,
       "lng": 4.8923,
       "distance_m": 287,

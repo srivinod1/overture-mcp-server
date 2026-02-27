@@ -65,7 +65,7 @@ s3://overturemaps-us-west-2/release/2026-01-21.0/theme=places/type=place/*
 |--------|------|-------------|---------|
 | `id` | string | Unique place identifier | — |
 | `names.primary` | string | Primary name of the place | `places_in_radius`, `nearest_place_of_type` |
-| `categories.primary` | string | Primary category (e.g., "coffee_shop") | All place tools |
+| `categories.primary` | string | Primary category (e.g., "cafe") | All place tools |
 | `categories.alternate` | array[string] | Additional categories | `get_place_categories` |
 | `geometry` | geometry (Point) | WKT point geometry | All place tools (spatial filter) |
 | `bbox.xmin` | float | Bounding box min longitude | All tools (pre-filter) |
@@ -130,9 +130,9 @@ financial_service
   financial_service.atm
 ```
 
-The `categories.primary` field contains the leaf-level category ID (e.g., `coffee_shop`, `hospital`).
+The `categories.primary` field contains the leaf-level category ID (e.g., `cafe`, `hospital`).
 
-### Sample Query: All Coffee Shops in 500m
+### Sample Query: All Cafes in 500m
 ```sql
 -- Note: ST_Point takes (lng, lat), not (lat, lng)
 -- Note: Uses ST_Distance_Spheroid for meter-accurate filtering, not ST_DWithin
@@ -153,7 +153,7 @@ WHERE bbox.xmin BETWEEN 4.895 AND 4.913              -- bbox pre-filter (degrees
         ST_FlipCoordinates(geometry),
         ST_FlipCoordinates(ST_Point(4.9041, 52.3676))
       ) < 500                                         -- exact filter (meters)
-  AND categories.primary = 'coffee_shop'
+  AND categories.primary = 'cafe'
 ORDER BY distance_m ASC
 LIMIT 20;
 ```

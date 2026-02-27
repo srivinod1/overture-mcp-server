@@ -18,9 +18,9 @@ class TestAdvertisingCompetitorAnalysis:
     """
 
     async def test_step1_find_nearest_competitor(self, test_registry):
-        """Step 1: Find the closest coffee shop to the proposed location."""
+        """Step 1: Find the closest cafe to the proposed location."""
         result = await execute_operation(test_registry, "nearest_place_of_type", {
-            "lat": 52.3676, "lng": 4.9041, "category": "coffee_shop",
+            "lat": 52.3676, "lng": 4.9041, "category": "cafe",
         })
         assert "error" not in result
         assert result["count"] == 1
@@ -29,10 +29,10 @@ class TestAdvertisingCompetitorAnalysis:
         assert "name" in nearest
 
     async def test_step2_list_all_competitors(self, test_registry):
-        """Step 2: List all competing coffee shops within walking distance."""
+        """Step 2: List all competing cafes within walking distance."""
         result = await execute_operation(test_registry, "places_in_radius", {
             "lat": 52.3676, "lng": 4.9041, "radius_m": 500,
-            "category": "coffee_shop", "limit": 50,
+            "category": "cafe", "limit": 50,
         })
         assert "error" not in result
         assert result["count"] > 0
@@ -82,12 +82,12 @@ class TestAdvertisingCompetitorAnalysis:
         """Cross-validate: nearest place should appear in radius results."""
         nearest_result = await execute_operation(
             test_registry, "nearest_place_of_type",
-            {"lat": 52.3676, "lng": 4.9041, "category": "coffee_shop"},
+            {"lat": 52.3676, "lng": 4.9041, "category": "cafe"},
         )
         radius_result = await execute_operation(
             test_registry, "places_in_radius",
             {"lat": 52.3676, "lng": 4.9041, "radius_m": 5000,
-             "category": "coffee_shop", "limit": 100},
+             "category": "cafe", "limit": 100},
         )
         nearest_name = nearest_result["results"][0]["name"]
         radius_names = [r["name"] for r in radius_result["results"]]
@@ -97,12 +97,12 @@ class TestAdvertisingCompetitorAnalysis:
         """Cross-validate: nearest place distance <= all radius place distances."""
         nearest_result = await execute_operation(
             test_registry, "nearest_place_of_type",
-            {"lat": 52.3676, "lng": 4.9041, "category": "coffee_shop"},
+            {"lat": 52.3676, "lng": 4.9041, "category": "cafe"},
         )
         radius_result = await execute_operation(
             test_registry, "places_in_radius",
             {"lat": 52.3676, "lng": 4.9041, "radius_m": 5000,
-             "category": "coffee_shop", "limit": 100},
+             "category": "cafe", "limit": 100},
         )
         nearest_dist = nearest_result["results"][0]["distance_m"]
         for r in radius_result["results"]:

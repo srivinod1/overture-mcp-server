@@ -146,7 +146,7 @@ Operation responses return compact JSON optimized for agent token consumption:
 Geometry is expensive in tokens and rarely needed for agent reasoning.
 
 ### 3.7 LLM-Native Category Discovery
-Instead of a static lookup table mapping "coffee shop" → Overture category IDs, we expose `get_place_categories` as an operation that returns the real Overture taxonomy. The agent calls it, sees the actual categories, and picks the right one. This is self-updating, handles ambiguity naturally, and covers the long tail of user language.
+Instead of a static lookup table mapping "cafe" → Overture category IDs, we expose `get_place_categories` as an operation that returns the real Overture taxonomy. The agent calls it, sees the actual categories, and picks the right one. This is self-updating, handles ambiguity naturally, and covers the long tail of user language.
 
 ### 3.8 Anonymous S3 Access
 Overture's S3 bucket is publicly accessible. DuckDB queries it without AWS credentials:
@@ -351,7 +351,7 @@ All operations follow a consistent response envelope:
     "lat": 52.3676,
     "lng": 4.9041,
     "radius_m": 500,
-    "category": "coffee_shop"
+    "category": "cafe"
   },
   "data_version": "2026-01-21.0",
   "suggestion": null

@@ -16,7 +16,7 @@ class TestMissingRequiredParams:
     async def test_places_missing_lat(self, test_registry):
         """Missing lat should return validation error."""
         result = await execute_operation(test_registry, "places_in_radius", {
-            "lng": 4.9041, "radius_m": 500, "category": "coffee_shop",
+            "lng": 4.9041, "radius_m": 500, "category": "cafe",
         })
         assert "error" in result
         assert result["error_type"] == "validation_error"
@@ -24,14 +24,14 @@ class TestMissingRequiredParams:
     async def test_places_missing_lng(self, test_registry):
         """Missing lng should return validation error."""
         result = await execute_operation(test_registry, "places_in_radius", {
-            "lat": 52.3676, "radius_m": 500, "category": "coffee_shop",
+            "lat": 52.3676, "radius_m": 500, "category": "cafe",
         })
         assert "error" in result
 
     async def test_places_missing_radius(self, test_registry):
         """Missing radius should return validation error."""
         result = await execute_operation(test_registry, "places_in_radius", {
-            "lat": 52.3676, "lng": 4.9041, "category": "coffee_shop",
+            "lat": 52.3676, "lng": 4.9041, "category": "cafe",
         })
         assert "error" in result
 
@@ -68,19 +68,19 @@ class TestNullParams:
 
     async def test_null_lat(self, test_registry):
         result = await execute_operation(test_registry, "places_in_radius", {
-            "lat": None, "lng": 4.9041, "radius_m": 500, "category": "coffee_shop",
+            "lat": None, "lng": 4.9041, "radius_m": 500, "category": "cafe",
         })
         assert "error" in result
 
     async def test_null_lng(self, test_registry):
         result = await execute_operation(test_registry, "places_in_radius", {
-            "lat": 52.3676, "lng": None, "radius_m": 500, "category": "coffee_shop",
+            "lat": 52.3676, "lng": None, "radius_m": 500, "category": "cafe",
         })
         assert "error" in result
 
     async def test_null_radius(self, test_registry):
         result = await execute_operation(test_registry, "places_in_radius", {
-            "lat": 52.3676, "lng": 4.9041, "radius_m": None, "category": "coffee_shop",
+            "lat": 52.3676, "lng": 4.9041, "radius_m": None, "category": "cafe",
         })
         assert "error" in result
 
@@ -97,7 +97,7 @@ class TestWrongTypes:
 
     async def test_string_lat(self, test_registry):
         result = await execute_operation(test_registry, "places_in_radius", {
-            "lat": "not_a_number", "lng": 4.9041, "radius_m": 500, "category": "coffee_shop",
+            "lat": "not_a_number", "lng": 4.9041, "radius_m": 500, "category": "cafe",
         })
         assert "error" in result
 

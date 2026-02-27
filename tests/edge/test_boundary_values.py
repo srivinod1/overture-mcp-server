@@ -126,7 +126,7 @@ class TestLimitBoundaries:
         """Limit of 1 should return at most 1 result."""
         result = await execute_operation(test_registry, "places_in_radius", {
             "lat": 52.3676, "lng": 4.9041, "radius_m": 5000,
-            "category": "coffee_shop", "limit": 1,
+            "category": "cafe", "limit": 1,
         })
         assert result["count"] <= 1
 
@@ -134,7 +134,7 @@ class TestLimitBoundaries:
         """Limit of 100 (max) should be accepted."""
         result = await execute_operation(test_registry, "places_in_radius", {
             "lat": 52.3676, "lng": 4.9041, "radius_m": 5000,
-            "category": "coffee_shop", "limit": 100,
+            "category": "cafe", "limit": 100,
         })
         assert "error" not in result
 
@@ -142,7 +142,7 @@ class TestLimitBoundaries:
         """Limit of 0 should be rejected."""
         result = await execute_operation(test_registry, "places_in_radius", {
             "lat": 52.3676, "lng": 4.9041, "radius_m": 500,
-            "category": "coffee_shop", "limit": 0,
+            "category": "cafe", "limit": 0,
         })
         assert "error" in result
 
@@ -150,6 +150,6 @@ class TestLimitBoundaries:
         """Limit of 101 should be rejected."""
         result = await execute_operation(test_registry, "places_in_radius", {
             "lat": 52.3676, "lng": 4.9041, "radius_m": 500,
-            "category": "coffee_shop", "limit": 101,
+            "category": "cafe", "limit": 101,
         })
         assert "error" in result

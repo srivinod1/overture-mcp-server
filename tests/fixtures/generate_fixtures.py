@@ -183,23 +183,23 @@ def generate_places() -> list[dict]:
         })
         place_id += 1
 
-    # 10 coffee_shops at known distances (bearings spread around center)
+    # 10 cafes at known distances (bearings spread around center)
     # Some are branded chains, most are independent
-    add_place("Koffie Centrum", "coffee_shop", 95, 0,
+    add_place("Cafe Centrum", "cafe", 95, 0,
               address_freeform="Damrak 1, 1012 LG Amsterdam")
-    add_place("Bean There", "coffee_shop", 150, 45)
-    add_place("The Daily Grind", "coffee_shop", 200, 90)
-    add_place("Brew & Co. Dam Square", "coffee_shop", 245, 135,
+    add_place("Bean There Cafe", "cafe", 150, 45)
+    add_place("The Daily Grind", "cafe", 200, 90)
+    add_place("Brew & Co. Dam Square", "cafe", 245, 135,
               brand_name="Brew & Co.", brand_wikidata="Q99999999",
               address_freeform="Dam 1, 1012 JS Amsterdam")
-    add_place("Amsterdam Roasters", "coffee_shop", 290, 180)
-    add_place("Canal Coffee", "coffee_shop", 340, 225,
+    add_place("Amsterdam Roasters", "cafe", 290, 180)
+    add_place("Canal Cafe", "cafe", 340, 225,
               operating_status="temporarily_closed")  # temporarily closed
-    add_place("Dam Square Brew", "coffee_shop", 380, 270)
-    add_place("Mokum Coffee", "coffee_shop", 420, 315,
+    add_place("Dam Square Brew", "cafe", 380, 270)
+    add_place("Mokum Cafe", "cafe", 420, 315,
               operating_status="permanently_closed")  # permanently closed
-    add_place("Java Junction", "coffee_shop", 495, 30, alt_categories=["cafe"])  # boundary: inside 500m
-    add_place("Far Away Beans", "coffee_shop", 505, 60)  # boundary: outside 500m
+    add_place("Java Junction", "cafe", 495, 30, alt_categories=["coffee_shop"])  # boundary: inside 500m
+    add_place("Far Away Beans", "cafe", 505, 60)  # boundary: outside 500m
 
     # 8 restaurants
     add_place("Restaurant De Kas", "restaurant", 100, 10,
@@ -1216,13 +1216,13 @@ def main():
     # Verify places
     result = verify_conn.execute(f"""
         SELECT COUNT(*) as total,
-               SUM(CASE WHEN categories."primary" = 'coffee_shop' THEN 1 ELSE 0 END) as coffee_shops,
+               SUM(CASE WHEN categories."primary" = 'cafe' THEN 1 ELSE 0 END) as cafes,
                SUM(CASE WHEN names."primary" IS NULL THEN 1 ELSE 0 END) as null_names,
                SUM(CASE WHEN operating_status = 'permanently_closed' THEN 1 ELSE 0 END) as perm_closed,
                SUM(CASE WHEN brand IS NOT NULL THEN 1 ELSE 0 END) as branded
         FROM read_parquet('{places_path}')
     """).fetchone()
-    print(f"  Places: {result[0]} total, {result[1]} coffee shops, {result[2]} null names, "
+    print(f"  Places: {result[0]} total, {result[1]} cafes, {result[2]} null names, "
           f"{result[3]} permanently closed, {result[4]} branded")
 
     # Verify buildings
@@ -1286,15 +1286,15 @@ def main():
     """).fetchall()
     print(f"  Land use subtypes: {dict(result)}")
 
-    # Verify coffee shop distances
+    # Verify cafe distances
     result = verify_conn.execute(f"""
         SELECT names."primary" AS name,
                CAST(ST_Distance_Spheroid(geometry, ST_Point(4.9041, 52.3676)) AS INTEGER) AS distance_m
         FROM read_parquet('{places_path}')
-        WHERE categories."primary" = 'coffee_shop'
+        WHERE categories."primary" = 'cafe'
         ORDER BY distance_m ASC
     """).fetchall()
-    print(f"  Coffee shop distances: {[f'{r[0]}: {r[1]}m' for r in result]}")
+    print(f"  Cafe distances: {[f'{r[0]}: {r[1]}m' for r in result]}")
 
     # Check for large geometry building
     result = verify_conn.execute(f"""

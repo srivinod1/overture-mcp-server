@@ -35,7 +35,7 @@ class TestPlacesLatency:
     async def test_places_in_radius_latency(self, test_registry):
         start = time.time()
         result = await execute_operation(test_registry, "places_in_radius", {
-            "lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "coffee_shop",
+            "lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "cafe",
         })
         elapsed = time.time() - start
         assert "error" not in result
@@ -44,7 +44,7 @@ class TestPlacesLatency:
     async def test_nearest_place_latency(self, test_registry):
         start = time.time()
         result = await execute_operation(test_registry, "nearest_place_of_type", {
-            "lat": 52.3676, "lng": 4.9041, "category": "coffee_shop",
+            "lat": 52.3676, "lng": 4.9041, "category": "cafe",
         })
         elapsed = time.time() - start
         assert "error" not in result
@@ -53,7 +53,7 @@ class TestPlacesLatency:
     async def test_count_places_latency(self, test_registry):
         start = time.time()
         result = await execute_operation(test_registry, "count_places_by_type_in_radius", {
-            "lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "coffee_shop",
+            "lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "cafe",
         })
         elapsed = time.time() - start
         assert "error" not in result
@@ -168,7 +168,7 @@ class TestEmptyAreaLatency:
     async def test_empty_places_fast(self, test_registry):
         start = time.time()
         result = await execute_operation(test_registry, "places_in_radius", {
-            "lat": 0.0, "lng": 0.0, "radius_m": 500, "category": "coffee_shop",
+            "lat": 0.0, "lng": 0.0, "radius_m": 500, "category": "cafe",
         })
         elapsed = time.time() - start
         assert result["count"] == 0

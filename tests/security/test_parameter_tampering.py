@@ -17,7 +17,7 @@ class TestRadiusTampering:
         """Radius > 50km should be rejected."""
         result = await execute_operation(test_registry, "places_in_radius", {
             "lat": 52.3676, "lng": 4.9041, "radius_m": 999999,
-            "category": "coffee_shop",
+            "category": "cafe",
         })
         assert "error" in result
         assert result["error_type"] == "validation_error"
@@ -25,7 +25,7 @@ class TestRadiusTampering:
     async def test_negative_radius_rejected(self, test_registry):
         result = await execute_operation(test_registry, "places_in_radius", {
             "lat": 52.3676, "lng": 4.9041, "radius_m": -1,
-            "category": "coffee_shop",
+            "category": "cafe",
         })
         assert "error" in result
 
@@ -38,7 +38,7 @@ class TestLimitTampering:
         """Limit > 100 should be rejected."""
         result = await execute_operation(test_registry, "places_in_radius", {
             "lat": 52.3676, "lng": 4.9041, "radius_m": 500,
-            "category": "coffee_shop", "limit": 1000000,
+            "category": "cafe", "limit": 1000000,
         })
         assert "error" in result
         assert result["error_type"] == "validation_error"
@@ -46,7 +46,7 @@ class TestLimitTampering:
     async def test_negative_limit_rejected(self, test_registry):
         result = await execute_operation(test_registry, "places_in_radius", {
             "lat": 52.3676, "lng": 4.9041, "radius_m": 500,
-            "category": "coffee_shop", "limit": -1,
+            "category": "cafe", "limit": -1,
         })
         assert "error" in result
 
@@ -67,7 +67,7 @@ class TestTypeCoercion:
         """String 'true' for include_geometry should work."""
         result = await execute_operation(test_registry, "places_in_radius", {
             "lat": 52.3676, "lng": 4.9041, "radius_m": 500,
-            "category": "coffee_shop", "include_geometry": "true",
+            "category": "cafe", "include_geometry": "true",
         })
         assert "error" not in result
 

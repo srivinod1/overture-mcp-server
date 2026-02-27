@@ -150,32 +150,32 @@ def loaded_fixture_db() -> duckdb.DuckDBPyConnection:
 # ---------------------------------------------------------------------------
 
 @pytest.fixture(scope="session")
-def known_coffee_shop_count() -> int:
-    """Total number of coffee shops in fixtures."""
+def known_cafe_count() -> int:
+    """Total number of cafes in fixtures."""
     return 10
 
 
 @pytest.fixture(scope="session")
-def known_coffee_shops_within_500m() -> int:
-    """Number of open/temporarily_closed coffee shops within 500m of amsterdam_center.
+def known_cafes_within_500m() -> int:
+    """Number of open/temporarily_closed cafes within 500m of amsterdam_center.
 
     Includes Java Junction at ~496m, excludes Far Away Beans at ~506m.
-    Excludes Mokum Coffee (permanently_closed) by default.
+    Excludes Mokum Cafe (permanently_closed) by default.
     Total within 500m is 9, but 1 is permanently_closed = 8 returned by default.
     """
     return 8
 
 
 @pytest.fixture(scope="session")
-def known_coffee_shops_within_500m_including_closed() -> int:
-    """Total coffee shops within 500m including permanently closed ones."""
+def known_cafes_within_500m_including_closed() -> int:
+    """Total cafes within 500m including permanently closed ones."""
     return 9
 
 
 @pytest.fixture(scope="session")
-def known_nearest_coffee_shop() -> dict:
-    """The closest coffee shop to amsterdam_center."""
-    return {"name": "Koffie Centrum", "distance_m": 95}
+def known_nearest_cafe() -> dict:
+    """The closest cafe to amsterdam_center."""
+    return {"name": "Cafe Centrum", "distance_m": 95}
 
 
 @pytest.fixture(scope="session")

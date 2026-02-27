@@ -86,7 +86,7 @@ class TestMultiMcpWorkflow:
 
     async def test_step5_compare_commercial_places(self, test_registry):
         """Step 5: Compare commercial activity via place counts."""
-        categories_to_check = ["restaurant", "coffee_shop"]
+        categories_to_check = ["restaurant", "cafe"]
         for cat in categories_to_check:
             result_a = await execute_operation(
                 test_registry, "count_places_by_type_in_radius",
@@ -121,7 +121,7 @@ class TestMultiMcpWorkflow:
         """All 5 themes should return data for Amsterdam center."""
         theme_operations = {
             "places": ("places_in_radius", {
-                "lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "coffee_shop",
+                "lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "cafe",
             }),
             "buildings": ("building_count_in_radius", {
                 "lat": 52.3676, "lng": 4.9041, "radius_m": 500,

@@ -66,9 +66,9 @@ class TestMultiLocationAnalysis:
         operations = [
             # Places
             ("get_place_categories", {"query": "bank"}),
-            ("places_in_radius", {"lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "coffee_shop"}),
-            ("nearest_place_of_type", {"lat": 52.3676, "lng": 4.9041, "category": "coffee_shop"}),
-            ("count_places_by_type_in_radius", {"lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "coffee_shop"}),
+            ("places_in_radius", {"lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "cafe"}),
+            ("nearest_place_of_type", {"lat": 52.3676, "lng": 4.9041, "category": "cafe"}),
+            ("count_places_by_type_in_radius", {"lat": 52.3676, "lng": 4.9041, "radius_m": 500, "category": "cafe"}),
             # Buildings
             ("building_count_in_radius", {"lat": 52.3676, "lng": 4.9041, "radius_m": 500}),
             ("building_class_composition", {"lat": 52.3676, "lng": 4.9041, "radius_m": 500}),

@@ -143,7 +143,7 @@ class TestNumericInjection:
         """String value for limit should be rejected at validation."""
         result = await execute_operation(test_registry, "places_in_radius", {
             "lat": 52.3676, "lng": 4.9041, "radius_m": 500,
-            "category": "coffee_shop",
+            "category": "cafe",
             "limit": "20; DROP TABLE places",
         })
         assert "error" in result
