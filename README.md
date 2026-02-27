@@ -15,7 +15,7 @@ AI agents need geospatial intelligence. This server gives them direct access to 
 
 ```
 +---------------------------------------------------+
-|  AI Agent (Claude, etc.)                          |
+|  AI Agent (Claude, Mistral, etc.)                 |
 +-----------------+---------------------------------+
 |  Geocoding /    |  Overture Maps MCP              |
 |  Routing MCP    |  ----------------------         |
