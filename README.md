@@ -18,18 +18,19 @@ AI agents need geospatial intelligence. This server gives them direct access to 
 |  AI Agent (Claude, Mistral, etc.)                 |
 +-----------------+---------------------------------+
 |  Geocoding /    |  Overture Maps MCP              |
-|  Routing MCP    |  ----------------------         |
-|  -------------- |  Place analytics                |
-|  Geocoding      |  Building composition           |
-|  Routing        |  Admin boundary lookups         |
-|  Directions     |  Transportation analysis        |
-|  ETA            |  Land use classification        |
-|                 |  Category discovery             |
+|  Routing /      |  ----------------------         |
+|  Display MCP    |  Place analytics                |
+|  -------------- |  Building composition           |
+|  Geocoding      |  Admin boundary lookups         |
+|  Routing        |  Transportation analysis        |
+|  Directions     |  Land use classification        |
+|  ETA            |  Category discovery             |
+|  Map display    |                                 |
 +-----------------+---------------------------------+
 ```
 
 **Overture MCP** handles spatial analytics that need direct data access.
-**Geocoding/Routing MCPs** handle geocoding, routing, and directions via APIs.
+**Geocoding/Routing/Display MCPs** handle geocoding, routing, directions, and map display via APIs.
 
 They're complementary — use them together for a complete geospatial agent.
 
